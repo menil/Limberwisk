@@ -1,8 +1,8 @@
 # MuteMe Flow
 
-A lightweight macOS menu bar app that turns a **MuteMe** USB button into a push-to-talk /
-tap-to-toggle control for **Wispr Flow** dictation, with the button's light showing whether
-you are dictating.
+A lightweight macOS menu bar app that turns a [**MuteMe**](https://muteme.com) USB button into
+a push-to-talk / tap-to-toggle control for [**Wispr Flow**](https://wisprflow.ai) dictation,
+with the button's light showing whether you are dictating.
 
 ![A MuteMe button glowing green next to a laptop showing a dictation window, above four buttons showing what each light colour means: red is idle, green is dictating, blue means Wispr Flow is not running, and yellow means something needs attention.](docs/images/hero.svg)
 
@@ -32,6 +32,11 @@ open the help page, and quit. It has no Dock icon.
 
 ## Installing
 
+> **No release has been published yet.** Once there is one, download its DMG
+> (`MuteMe-Flow-<version>.dmg`) from the
+> [Releases page](https://github.com/menil/wisprflow-muteme-bridge/releases). Until then,
+> [build it yourself](docs/releasing.md#building-locally); the DMG is written to `dist/`.
+
 1. Open the DMG and drag **MuteMe Flow** to Applications.
 2. A release that is not notarized (see the release notes) is refused by macOS the first
    time. On macOS 15 and later, try to open it, then go to **System Settings > Privacy &
@@ -41,7 +46,7 @@ open the help page, and quit. It has no Dock icon.
 3. Quit the official MuteMe app if it is running: it competes for the button and resets the
    light. MuteMe Flow notices and offers to quit it for you.
 
-Requires macOS 13 or later and Wispr Flow.
+Requires macOS 13 or later and [Wispr Flow](https://wisprflow.ai).
 
 ## Troubleshooting
 
