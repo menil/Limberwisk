@@ -11,6 +11,14 @@ class DeviceError(Exception):
     """The device is gone or an I/O call failed."""
 
 
+class DeviceNotFoundError(DeviceError):
+    """No matching device is plugged in.
+
+    Kept distinct from other open failures (permissions, another app holding the
+    device) because only those should be surfaced to the user (spec section 5.1).
+    """
+
+
 # runtime_checkable lets tests assert the fake and the real adapter both satisfy it.
 @runtime_checkable
 class HidDevice(Protocol):

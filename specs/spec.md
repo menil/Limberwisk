@@ -160,6 +160,7 @@ Dispatching a `wispr-flow://` URL launches Wispr Flow if it is not running, whic
 * **HID thread:** one background thread owns the `hid.device`, performs blocking `read(64, timeout_ms)` and all LED writes. It never touches AppKit.
 * **Main thread:** owns rumps/AppKit, menu state, and `NSWorkspace` URL dispatch.
 * **State machine:** runs on the main thread. The HID thread forwards decoded edge events (`DOWN`, `UP`, `DISCONNECTED`) to it via the main run loop, and the state machine posts LED requests back to the HID thread through a queue. This keeps all state transitions single-threaded and the hold timer a plain main-loop timer.
+* **`hidapi` must be imported on the main thread.** On macOS the `hid` module initialises its HID manager on the importing thread's run loop, and the interpreter's exit hook then tears it down from the main thread; importing it first on a worker thread crashes the process at exit (SIGTRAP in `CFRunLoopRemoveSource`, reproduced 6 of 6 times; 0 of 6 when imported on the main thread). The app preloads it at startup before starting the HID thread, and the adapter refuses a first import off the main thread.
 * The extra hop is expected to cost well under the 25ms dispatch goal (section 8); measure it, since the goal is unproven.
 
 ### 4.7 URL Dispatch Failure
@@ -233,7 +234,7 @@ The app runs with `LSUIElement = True` (no Dock icon), presenting a native macOS
 | :--- | :--- | :--- | :--- |
 | **Response Latency** | Touch to URL dispatch < 25ms | **Blocks release** if p95 > 50ms; between 25 and 50ms is accepted and tracked | High-resolution timestamps from the `0x04` report to the `NSWorkspace.openURLs` call, including the thread hop in section 4.6. Dispatch uses `NSWorkspace`, not an `open` subprocess. |
 | **Memory Footprint** | < 45 MB RAM | Informational, never blocks a release; revisit the target if Python + PyObjC exceeds it | Activity Monitor audit of the standalone bundle |
-| **CPU Utilization** | < 0.2% CPU when idle | Informational, never blocks a release | Blocking `read(timeout)` on a dedicated thread; the device emits ~2 reports/s idle and ~70/s while touched |
+| **CPU Utilization** | < 0.2% CPU when idle | Informational, never blocks a release | Blocking `read(timeout)` on a dedicated thread; the device emits ~2 reports/s idle and ~70/s while touched. While no device is plugged in the app polls twice a second; enumerating only the known vendor IDs measured 0.19% of one core, against 1.6% for listing every HID device |
 | **Hotplug Support** | Reconnection < 1.5s after cable replug | **Blocks release** if reconnection takes > 3s or never recovers | Heartbeat watchdog plus automated USB disconnect/reconnect tests |
 | **Wispr compatibility** | `start`/`stop-hands-free` semantics in section 4.2 hold | **Blocks release** | Manual regression against the installed Wispr Flow before each release, since the URL scheme is undocumented |
 
@@ -245,6 +246,7 @@ The app runs with `LSUIElement = True` (no Dock icon), presenting a native macOS
 ### 8.2 Known Risks
 * Wispr Flow's URL scheme is undocumented and may change; pin and document the tested version range (verified: 1.6.1174) and surface a clear error when commands have no effect.
 * Mini and legacy device IDs are unverified (section 3.1).
+* Devices are trusted by VID/PID alone, so any USB device presenting a listed pair can inject touches. This needs physical access and is accepted for a desktop button, but the listed pairs should stay explicit (section 3.1).
 * `rumps` 0.4.0 is old and lightly maintained; the menu bar layer is thin enough to replace with PyObjC directly if it breaks on a future macOS.
 * Signed-bundle Input Monitoring behaviour is untested (section 7.2).
 
