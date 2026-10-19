@@ -7,6 +7,7 @@ from typing import Any
 # A Cocoa run loop never returns control to the interpreter on its own, so Python-level
 # signal handlers would not run. A cheap repeating timer wakes it to check.
 _WAKE_INTERVAL_S = 0.5
+_WAKE_TOLERANCE_S = 0.25
 
 
 def install_termination_handlers(
@@ -29,4 +30,6 @@ def keep_interpreter_responsive() -> None:
     from Foundation import NSRunLoop, NSRunLoopCommonModes, NSTimer
 
     timer = NSTimer.timerWithTimeInterval_repeats_block_(_WAKE_INTERVAL_S, True, lambda _t: None)
+    # Nothing here is time-critical, so let the system fire it alongside other wake-ups.
+    timer.setTolerance_(_WAKE_TOLERANCE_S)
     NSRunLoop.mainRunLoop().addTimer_forMode_(timer, NSRunLoopCommonModes)

@@ -23,8 +23,8 @@ log = logging.getLogger(__name__)
 # Replug must be noticed within 1.5 s (spec section 8); this is the retry cadence while
 # no device is present.
 RECONNECT_INTERVAL_S = 0.5
-# The loop notices a stop request after at most one 50 ms read, so this only needs to
-# cover that plus a final LED write; anything longer means the thread is stuck.
+# The loop notices a stop request after at most one idle read timeout, so this only needs
+# to cover that plus a final LED write; anything longer means the thread is stuck.
 STOP_JOIN_TIMEOUT_S = 2.0
 PAUSE_ACK_TIMEOUT_S = 1.0
 

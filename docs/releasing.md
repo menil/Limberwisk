@@ -4,6 +4,20 @@ A release is a tag. Pushing `v1.0.0` runs `.github/workflows/release.yml`, which
 tests, builds a universal2 app, wraps it in a DMG and creates a **draft** GitHub release.
 Review the draft, then publish it.
 
+## Cutting a release
+
+1. Work through [`manual-tests.md`](manual-tests.md); the real-button latency, hotplug and
+   Wispr-compatibility gates (specs/spec.md section 8) block a release and are not checked
+   by CI. Nothing mechanical stops a tag being pushed before then.
+2. Set `__version__` in `src/muteme_flow/__init__.py` to the release version.
+3. In `CHANGELOG.md`, rename `[Unreleased]` to the version and date, and start a new
+   `[Unreleased]` above it. The workflow's generated notes list the commits; the changelog is
+   the human summary, so keep both.
+4. Merge, then push the tag (`git tag v1.0.0 && git push origin v1.0.0`).
+5. Review the draft release the workflow creates, then publish it.
+
+Details:
+
 - The tag must match the version in `src/muteme_flow/__init__.py` (`v1.0.0` needs
   `__version__ = "1.0.0"`), or the workflow stops before building. A suffix such as
   `v1.0.0-rc1` is accepted and marks the release as a prerelease.

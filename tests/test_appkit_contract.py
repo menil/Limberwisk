@@ -61,6 +61,9 @@ def test_timer_and_run_loop_api():
     import Foundation
 
     assert hasattr(Foundation.NSTimer, "timerWithTimeInterval_repeats_block_")
+    timer = Foundation.NSTimer.timerWithTimeInterval_repeats_block_(60, False, lambda _t: None)
+    assert hasattr(timer, "setTolerance_")
+    timer.invalidate()
     assert hasattr(Foundation.NSRunLoop.mainRunLoop(), "addTimer_forMode_")
     assert Foundation.NSRunLoopCommonModes
     assert hasattr(Foundation.NSRunLoop.currentRunLoop(), "runUntilDate_")

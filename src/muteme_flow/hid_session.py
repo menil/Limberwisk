@@ -8,9 +8,15 @@ from muteme_flow.hid_io import DeviceError, HidDevice
 from muteme_flow.led import LedMailbox, led_report
 
 REPORT_BUFFER_SIZE = 64
-# Short so a requested LED colour reaches the device promptly even while untouched, when
-# the device only sends a heartbeat every ~0.5 s. The wake-ups are cheap.
-READ_TIMEOUT_MS = 50
+# How long a read waits when the device is silent. It bounds how late an LED change can be
+# written when nothing is happening, and how soon the worker notices stop/pause. Idle CPU
+# is the reason it is long: 50 ms (20 wake-ups a second) measured 0.27% of a core, 250 ms
+# 0.10% (specs/spec.md section 10.1).
+IDLE_READ_TIMEOUT_MS = 250
+# While a touch is in progress, and for a moment after, wake often: the LED changes that
+# follow a touch (for example back to red on release) must reach the device promptly.
+BUSY_READ_TIMEOUT_MS = 40
+BUSY_WINDOW_S = 1.0
 # The device sends a report at least every ~0.5 s, so silence this long means it is gone
 # even if the OS has not reported an error.
 WATCHDOG_S = 1.5
@@ -30,12 +36,15 @@ class HidSession:
         self._clock = clock
         self._decoder = EdgeDecoder()
         self._last_report_at = clock()
+        self._short_reads_until = 0.0
 
     def step(self) -> Edge | None:
         """Apply a pending LED change, then wait for one report. Raises DeviceError."""
         self.flush_led()
 
-        report = self._device.read(REPORT_BUFFER_SIZE, READ_TIMEOUT_MS)
+        busy = self._clock() < self._short_reads_until
+        timeout_ms = BUSY_READ_TIMEOUT_MS if busy else IDLE_READ_TIMEOUT_MS
+        report = self._device.read(REPORT_BUFFER_SIZE, timeout_ms)
         now = self._clock()
         if not report:
             if now - self._last_report_at > WATCHDOG_S:
@@ -43,7 +52,10 @@ class HidSession:
             return None
 
         self._last_report_at = now
-        return self._decoder.feed(report)
+        edge = self._decoder.feed(report)
+        if edge is not None:
+            self._short_reads_until = now + BUSY_WINDOW_S
+        return edge
 
     def flush_led(self) -> None:
         """Write the requested colour, if any. Also used for a last write before closing."""
