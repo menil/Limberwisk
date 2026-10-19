@@ -152,3 +152,13 @@ def test_enumeration_is_limited_to_known_vendors(hid_module):
     open_first_known(hid_module)
     assert 0 not in requested
     assert set(requested) <= {0x3603, 0x20A0}
+
+
+def test_the_opened_device_remembers_which_known_model_it_is(opened):
+    device, _ = opened
+    assert device.device_id.model == "MuteMe Original"
+    assert device.device_id.verified
+
+
+def test_the_model_is_forgotten_by_a_device_that_was_never_opened(hid_module):
+    assert HidapiDevice(hid_module).device_id is None

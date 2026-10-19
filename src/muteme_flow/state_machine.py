@@ -52,9 +52,12 @@ class StateMachine:
         set_led: Callable[[Color], None],
         scheduler: Scheduler,
         timings: Timings | None = None,
+        on_change: Callable[[], None] | None = None,
     ) -> None:
         self._send = send
         self._set_led = set_led
+        # Called whenever something the menu shows may have changed.
+        self._on_change = on_change or (lambda: None)
         self._scheduler = scheduler
         self._timings = timings or Timings()
 
@@ -62,6 +65,8 @@ class StateMachine:
         self._wispr_running = False
         self._device_connected = False
         self._open_failed = False
+        # The official MuteMe app is running and fights over the device (section 5).
+        self._conflict = False
         # Once set, the machine ignores everything: the app is quitting and anything that
         # still arrives (a touch, a late completion) must not undo the final stop.
         self._closed = False
@@ -85,13 +90,30 @@ class StateMachine:
         self._flash_timer: TimerHandle | None = None
 
         self._led_shown: Color | None = None
-        self._refresh_led()
+        self._sync_outputs()
 
     # --- status for the UI -------------------------------------------------------
 
     @property
     def state(self) -> State:
         return self._state
+
+    @property
+    def timings(self) -> Timings:
+        return self._timings
+
+    @timings.setter
+    def timings(self, timings: Timings) -> None:
+        """Takes effect from the next gesture; one already in progress keeps its timer."""
+        self._timings = timings
+
+    @property
+    def recording(self) -> bool:
+        return self._state in _RECORDING
+
+    @property
+    def conflict(self) -> bool:
+        return self._conflict
 
     @property
     def wispr_running(self) -> bool:
@@ -162,7 +184,7 @@ class StateMachine:
         self._open_failed = False
         self._forget_touch()
         # A freshly connected device has lost its colour.
-        self._refresh_led(force=True)
+        self._sync_outputs(force=True)
 
     def device_detached(self) -> None:
         if self._closed:
@@ -173,13 +195,20 @@ class StateMachine:
         self._abandon_recording()
         self._forget_touch()
         self._last_up_at = None
-        self._refresh_led()
+        self._sync_outputs()
 
     def device_open_failed(self) -> None:
         if self._closed:
             return
         self._open_failed = True
-        self._refresh_led()
+        self._sync_outputs()
+
+    def set_conflict(self, conflict: bool) -> None:
+        if self._closed or conflict == self._conflict:
+            return
+        log.info("official MuteMe app %s", "is running" if conflict else "has quit")
+        self._conflict = conflict
+        self._sync_outputs()
 
     def wispr_running_changed(self, running: bool) -> None:
         if self._closed or running == self._wispr_running:
@@ -191,7 +220,7 @@ class StateMachine:
             # outstanding no longer matters.
             self._stop_ok_seq = self._stop_failed_seq
             self._abandon_recording()
-        self._refresh_led()
+        self._sync_outputs()
 
     def wake(self) -> None:
         """After system sleep: resync Wispr to idle (specs/spec.md section 4.5)."""
@@ -202,7 +231,7 @@ class StateMachine:
         if self._wispr_running:
             self._send_command(Command.STOP)
         self._forget_touch()
-        self._refresh_led(force=True)
+        self._sync_outputs(force=True)
 
     def shutdown(self) -> None:
         """App is quitting: stop any recording, leave the LED red, then go inert."""
@@ -236,7 +265,7 @@ class StateMachine:
             self._failures = 0
             if command is Command.STOP:
                 self._stop_ok_seq = max(self._stop_ok_seq, seq)
-            self._refresh_led()
+            self._sync_outputs()
             return
 
         self._failures += 1
@@ -271,7 +300,7 @@ class StateMachine:
         self._state = State.PENDING_TOUCH
         self._hold_timer = self._scheduler.call_later(self._timings.hold_s, self._hold_elapsed)
         # Light the LED before dispatching: the dispatch is the slow part.
-        self._refresh_led()
+        self._sync_outputs()
         if self._pending_stop:
             self._send_command(Command.STOP)
         self._send_command(Command.START)
@@ -284,7 +313,7 @@ class StateMachine:
     def _end_recording(self) -> None:
         self._hold_timer = self._cancel(self._hold_timer)
         self._state = State.IDLE
-        self._refresh_led()
+        self._sync_outputs()
         self._send_command(Command.STOP)
 
     def _abandon_recording(self) -> None:
@@ -309,15 +338,15 @@ class StateMachine:
     def _start_flash(self) -> None:
         self._cancel(self._flash_timer)
         self._flash_timer = self._scheduler.call_later(ERROR_FLASH_S, self._end_flash)
-        self._refresh_led()
+        self._sync_outputs()
 
     def _end_flash(self) -> None:
         self._flash_timer = None
         if not self._closed:
-            self._refresh_led()
+            self._sync_outputs()
 
     def _wanted_led(self) -> Color:
-        if self._flash_timer is not None or self._open_failed:
+        if self._flash_timer is not None or self._open_failed or self._conflict:
             return Color.YELLOW
         if not self._wispr_running:
             return Color.BLUE
@@ -325,8 +354,10 @@ class StateMachine:
             return Color.GREEN
         return Color.RED
 
-    def _refresh_led(self, *, force: bool = False) -> None:
+    def _sync_outputs(self, *, force: bool = False) -> None:
+        """Push the LED colour to the device and tell the UI something may have changed."""
         wanted = self._wanted_led()
         if force or wanted is not self._led_shown:
             self._led_shown = wanted
             self._set_led(wanted)
+        self._on_change()

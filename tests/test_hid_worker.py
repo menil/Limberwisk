@@ -273,3 +273,13 @@ def test_start_twice_is_rejected(start):
     harness = start()
     with pytest.raises(RuntimeError):
         harness.worker.start()
+
+
+def test_the_connected_device_is_exposed_while_connected_and_cleared_after(start):
+    device = quiet_device()
+    harness = start(device)
+    harness.expect(DeviceEvent.CONNECTED)
+    assert harness.worker.connected_device is device
+    device.disconnect()
+    harness.expect(DeviceEvent.DISCONNECTED)
+    assert harness.worker.connected_device is None

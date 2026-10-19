@@ -71,6 +71,7 @@ class HidWorker:
         self._released = threading.Event()
         self._released.set()
         self._thread: threading.Thread | None = None
+        self._device: HidDevice | None = None
         # The last connect problem already reported, so a persistent one is logged and
         # signalled once instead of on every retry.
         self._connect_problem: str | None = None
@@ -80,6 +81,11 @@ class HidWorker:
             raise RuntimeError("worker already started")
         self._thread = threading.Thread(target=self._run, name="muteme-hid", daemon=True)
         self._thread.start()
+
+    @property
+    def connected_device(self) -> HidDevice | None:
+        """The open device, for diagnostics; do not do I/O on it from another thread."""
+        return self._device
 
     @property
     def running(self) -> bool:
@@ -139,6 +145,7 @@ class HidWorker:
             return None
         self._connect_problem = None
         self._released.clear()
+        self._device = device
         return device
 
     def _report_connect_problem(
@@ -185,6 +192,7 @@ class HidWorker:
                 self._emit(DeviceEvent.DISCONNECTED)
 
     def _close(self, device: HidDevice) -> None:
+        self._device = None
         try:
             device.close()
         except Exception:

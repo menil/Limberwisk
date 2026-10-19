@@ -64,3 +64,66 @@ def test_timer_and_run_loop_api():
     assert hasattr(Foundation.NSRunLoop.mainRunLoop(), "addTimer_forMode_")
     assert Foundation.NSRunLoopCommonModes
     assert hasattr(Foundation.NSRunLoop.currentRunLoop(), "runUntilDate_")
+
+
+def test_service_management_api_for_the_login_item():
+    from ServiceManagement import SMAppService
+
+    assert hasattr(SMAppService, "mainAppService")
+    service_methods = ("status", "registerAndReturnError_", "unregisterAndReturnError_")
+    assert all(hasattr(SMAppService, name) for name in service_methods)
+
+
+def test_bundle_and_defaults_api():
+    from Foundation import NSBundle, NSUserDefaults
+
+    assert hasattr(NSBundle.mainBundle(), "bundleIdentifier")
+    assert hasattr(NSBundle, "bundleWithURL_")
+    defaults = NSUserDefaults.standardUserDefaults()
+    assert all(
+        hasattr(defaults, name)
+        for name in ("objectForKey_", "integerForKey_", "setInteger_forKey_")
+    )
+
+
+def test_pasteboard_and_activation_policy_api():
+    import AppKit
+
+    pasteboard = AppKit.NSPasteboard.generalPasteboard()
+    assert hasattr(pasteboard, "clearContents")
+    assert hasattr(pasteboard, "setString_forType_")
+    assert AppKit.NSPasteboardTypeString
+    assert hasattr(AppKit.NSApplication.sharedApplication(), "setActivationPolicy_")
+    assert AppKit.NSApplicationActivationPolicyAccessory is not None
+
+
+def test_running_application_api_used_to_detect_and_quit_the_official_app():
+    from AppKit import NSWorkspace
+
+    apps = NSWorkspace.sharedWorkspace().runningApplications()
+    assert apps
+    app = apps[0]
+    assert all(
+        hasattr(app, name)
+        for name in ("localizedName", "bundleIdentifier", "isTerminated", "terminate")
+    )
+
+
+def test_the_sleep_wake_and_terminate_notification_constants_exist():
+    import AppKit
+
+    assert AppKit.NSApplicationWillTerminateNotification == "NSApplicationWillTerminateNotification"
+
+
+def test_service_management_constants_and_settings_link():
+    from ServiceManagement import SMAppService, SMAppServiceStatusEnabled
+
+    from muteme_flow import login_item
+
+    assert SMAppServiceStatusEnabled == login_item._STATUS_ENABLED
+    assert hasattr(SMAppService, "openSystemSettingsLoginItems")
+
+
+def test_the_rumps_private_attribute_we_rely_on_to_hide_a_row_exists():
+    rumps = pytest.importorskip("rumps")
+    assert hasattr(rumps.MenuItem("x")._menuitem, "setHidden_")

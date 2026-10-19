@@ -181,19 +181,23 @@ Dispatching a `wispr-flow://` URL launches Wispr Flow if it is not running, whic
 ## 5. Conflict Resolution & Process Monitoring
 
 Because the official MuteMe companion app attempts exclusive USB-HID communication and resets LEDs:
-1. **Detection:** One startup check with `NSRunningApplication.runningApplicationsWithBundleIdentifier:`, then `NSWorkspace` launch/terminate notifications, for the official app's bundle identifier (confirmed against a real install before release). There is no polling loop, which keeps idle CPU near zero and avoids races during app startup and shutdown. Matching on display name alone is fragile.
+1. **Detection:** One startup check with `NSRunningApplication.runningApplicationsWithBundleIdentifier:`, then `NSWorkspace` launch/terminate notifications, for the official app. Its bundle identifier has not been confirmed (the app is not installed on the development machine), so until it is, matching falls back to the process names `MuteMe` and `MuteMe-Client`; the identifier must be filled in from a real install before release. There is no polling loop, which keeps idle CPU near zero and avoids races during app startup and shutdown. Matching on display name alone is fragile, which is why the identifier matters.
 2. **UI Indication:** If detected, the menu bar title displays `🎙️⚠️` with a menu item:
-   `"⚠️ Official MuteMe app is running (click to quit)"`. Clicking requests a polite `terminate()` after a confirmation, never a force kill.
+   `"⚠️ Official MuteMe app is running (click to quit)"`. Clicking opens a confirmation that names each app and its bundle identifier, then requests a polite `terminate()` of exactly the apps that were shown (never a fresh lookup, never a force kill).
 3. **LED Indication:** The hardware LED shifts to **Yellow** until the conflict is resolved. Yellow has priority over Red and Green.
 
 ### 5.1 Other States and Error Handling
 | Condition | Menu status | LED |
 | :--- | :--- | :--- |
 | Device not connected (no report for ~1.5s) | `Status: MuteMe not connected` | n/a |
+| Official MuteMe app running | `Status: Official MuteMe app is running`, title `🎙️⚠️`, plus the quit row | Yellow |
+| A Wispr command failed | `Status: Wispr command failed` (for the ~1s flash, and persistently after three failures in a row) | Yellow flash |
 | Device connected, Wispr Flow not running (touches swallowed, section 4.4) | `Status: Wispr Flow not running` | Blue |
-| Device cannot be opened (for example a missing permission in a signed bundle, see section 7.2) | `Status: Cannot open device` with a link to System Settings | Yellow |
+| Device cannot be opened (for example a missing permission in a signed bundle, see section 7.2) | `Status: Cannot open device` | Yellow |
 | System sleep / wake | Re-open the device and resync LED to `IDLE` on wake | Red |
 | Multiple MuteMe devices | First device wins in v1; others are ignored | n/a |
+
+When several conditions hold, the menu shows the most useful one, in this order: command failed, official app running (it is also the likely reason the device will not open), cannot open, not connected, Wispr not running, then dictating or ready. The LED follows its own priority (section 4): yellow conditions, then blue, then green, then red.
 
 ---
 
@@ -203,19 +207,22 @@ The app runs with `LSUIElement = True` (no Dock icon), presenting a native macOS
 
 ```
 [🎙️ MuteMe Flow]
-├── Status: Ready (MuteMe Connected)
+├── Status: Ready (MuteMe connected)
+├── ⚠️ Official MuteMe app is running (click to quit)   [shown only during a conflict]
 ├── Mode: Dual (Tap to Toggle / Hold for PTT)
 ├── Hold Threshold  ▸ 250 / 350 / 500 ms
 ├── -----------------------------------
-├── Start at Login [✓]            (SMAppService, macOS 13+)
+├── Start at Login [✓]            (SMAppService, macOS 13+; installed app only)
 ├── Copy Diagnostics
 ├── Documentation & Help          (opens the GitHub README)
 ├── -----------------------------------
 └── Quit MuteMe Flow
 ```
 
-* **Settings** (hold threshold, start at login) are stored in `UserDefaults`.
-* **Logging:** `os.Logger` (subsystem `MuteMe Flow`) records device connect/disconnect, state transitions, URL dispatches and errors, but never audio or dictated text. **Copy Diagnostics** puts app version, macOS version, Wispr Flow version, device VID/PID and the recent log lines on the clipboard, to make Wispr-compatibility breaks reportable.
+* **Settings:** the hold threshold is stored in `UserDefaults` and applies from the next gesture. Start at Login is held by the system (`SMAppService`) rather than by the app, and is offered only when running as the packaged app: from source the "main app" is the Python interpreter, and registering that would add a login item nobody asked for.
+* **Quitting:** the menu item, `SIGTERM`/`SIGINT` and the system's terminate notification all follow the same orderly path (stop any recording, red LED, then exit). A quit that arrives while another is mid-shutdown waits for it rather than terminating the process early, and every shutdown step runs even if an earlier one fails. A second signal restores the default action, so a hung app can still be killed. The app installs its signal handlers and a light 2 Hz wake-up timer, because a Cocoa run loop otherwise never returns control to the interpreter to run them.
+* **Responsiveness:** menu refreshes are posted to run after the current state transition (merged when several arrive together), so a slow or failing UI update can neither delay the Wispr command nor abort a state change. The login-item status is read at startup and after a change, not on every refresh. Start at Login sends a login item that is awaiting approval to System Settings instead of re-registering it.
+* **Logging:** a rotating file at `~/Library/Logs/MuteMe Flow/muteme-flow.log` (plus stderr) records device connect/disconnect, state transitions, command failures and errors, but never audio or dictated text, which the app never sees. A file is used instead of `os.Logger` because Python cannot call the `os_log` macros, and a bundled app has no usable stderr. **Copy Diagnostics** replaces the home folder in log lines with `~` (the text is meant for public bug reports) and puts app version, macOS version, Wispr Flow version, device VID/PID and the recent log lines on the clipboard, to make Wispr-compatibility breaks reportable.
 
 ---
 

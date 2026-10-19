@@ -33,9 +33,26 @@ class FakeWorkspace:
 
 
 class FakeApp:
-    def __init__(self, bundle_id: str, terminated: bool = False) -> None:
+    def __init__(
+        self, bundle_id: str, terminated: bool = False, name: str = "App", accepts_quit: bool = True
+    ) -> None:
         self._bundle_id = bundle_id
         self._terminated = terminated
+        self._name = name
+        self._accepts_quit = accepts_quit
+        self.terminate_calls = 0
+        self.force_terminate_calls = 0
+
+    def localizedName(self) -> str:  # noqa: N802
+        return self._name
+
+    def terminate(self) -> bool:
+        self.terminate_calls += 1
+        return self._accepts_quit
+
+    def forceTerminate(self) -> bool:  # noqa: N802
+        self.force_terminate_calls += 1
+        return True
 
     def isTerminated(self) -> bool:  # noqa: N802
         return self._terminated
@@ -56,14 +73,14 @@ class FakeNotification:
 
 class FakeNotificationCenter:
     def __init__(self) -> None:
-        self.handlers: dict[str, Any] = {}
+        self.handlers: dict[str, list[Any]] = {}
         self.queues: dict[str, Any] = {}
         self.removed: list[Any] = []
 
     def addObserverForName_object_queue_usingBlock_(  # noqa: N802
         self, name: str, obj: Any, queue: Any, block: Any
     ) -> Any:
-        self.handlers[name] = block
+        self.handlers.setdefault(name, []).append(block)
         self.queues[name] = queue
         return f"observer-for-{name}"
 
@@ -71,4 +88,5 @@ class FakeNotificationCenter:
         self.removed.append(observer)
 
     def post(self, name: str, notification: Any = None) -> None:
-        self.handlers[name](notification)
+        for handler in self.handlers[name]:
+            handler(notification)
