@@ -230,7 +230,7 @@ def test_steps_run_in_a_safe_order(workflow):
 
 def test_the_tag_must_match_the_codes_version_before_anything_is_built(workflow):
     check = steps(workflow)[step_index(workflow, "Check the tag matches the code's version")]
-    assert "GITHUB_REF_NAME" in check["run"]
+    assert "$TAG" in check["run"]
     assert step_index(workflow, "Check the tag matches the code's version") < step_index(
         workflow, "Build the app"
     )
@@ -315,15 +315,32 @@ def test_the_release_pr_config_edits_the_version_the_code_really_has():
     assert manifest["."] == __version__
 
 
-def test_the_release_pr_workflow_pins_its_action_and_needs_a_token(release_please):
-    (job,) = release_please["jobs"].values()
-    (step,) = job["steps"]
+def test_the_release_pr_workflow_pins_its_action_and_builds_without_a_token(release_please):
+    jobs = release_please["jobs"]
+    (step,) = jobs["release-please"]["steps"]
     assert re.search(r"@[0-9a-f]{40}$", step["uses"]), step["uses"]
-    # Without the token, tags would start no workflow; the step must be skipped, not fail.
-    assert "HAS_TOKEN" in step["if"]
-    assert step["with"]["token"] == "${{ secrets.RELEASE_PLEASE_TOKEN }}"
+    assert "token" not in step.get("with", {})  # the built-in token is enough
+    # Tags made with the built-in token start no workflow, so the build is called directly,
+    # and only when release-please says it made a release.
+    build = jobs["build"]
+    assert build["uses"] == "./.github/workflows/release.yml"
+    assert "release_created" in build["if"]
+    assert build["with"]["tag"] == "${{ needs.release-please.outputs.tag_name }}"
+    assert build["secrets"] == "inherit"
+    assert build["permissions"]["contents"] == "write"  # the release job needs it
     # PyYAML reads the bare key `on` as the boolean True, so `["on"]` would be a KeyError.
     assert release_please[True]["push"]["branches"] == ["main"]
+
+
+def test_the_build_can_be_called_with_a_tag_or_started_by_one(workflow):
+    # Called from another workflow the ref is main, so the tag must come from the input;
+    # every use of the tag has to go through TAG or a called build would use "main".
+    assert workflow[True]["workflow_call"]["inputs"]["tag"]["required"] is True
+    assert workflow["env"]["TAG"] == "${{ inputs.tag || github.ref_name }}"
+    text = (ROOT / ".github" / "workflows" / "release.yml").read_text()
+    assert "GITHUB_REF_NAME" not in text
+    checkout = steps(workflow)[0]
+    assert checkout["with"]["ref"] == "refs/tags/${{ env.TAG }}"
 
 
 def test_the_release_job_fills_a_draft_that_release_please_already_made(workflow):
