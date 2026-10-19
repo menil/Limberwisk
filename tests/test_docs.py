@@ -116,3 +116,27 @@ def test_svg_images_are_well_formed_and_described_for_screen_readers(svg):
     names = {element.tag.rsplit("}", 1)[-1] for element in root.iter()}
     assert {"title", "desc"} <= names
     assert root.get("role") == "img"
+
+
+def test_dependabot_updates_actions_and_python_without_triggering_releases():
+    import yaml
+
+    config = yaml.safe_load((ROOT / ".github" / "dependabot.yml").read_text())
+    updates = {u["package-ecosystem"]: u for u in config["updates"]}
+    assert set(updates) == {"github-actions", "pip"}
+    for update in updates.values():
+        # release-please only cuts a release for feat and fix commits.
+        assert update["commit-message"]["prefix"] not in {"feat", "fix"}
+
+
+def test_the_bug_report_form_asks_for_the_diagnostics_the_menu_copies():
+    import yaml
+
+    form = yaml.safe_load((ROOT / ".github" / "ISSUE_TEMPLATE" / "bug_report.yml").read_text())
+    fields = [f for f in form["body"] if f.get("id") == "diagnostics"]
+    assert len(fields) == 1, f"expected one diagnostics field in the form, found {len(fields)}"
+    diagnostics = fields[0]
+    assert diagnostics["validations"]["required"] is True
+    assert "Copy Diagnostics" in diagnostics["attributes"]["description"]
+    # The menu item the form names must exist under that name.
+    assert '"Copy Diagnostics"' in (ROOT / "src" / "muteme_flow" / "app.py").read_text()
