@@ -1,0 +1,167 @@
+name: Release
+
+# Pushing a tag such as v1.0.0 builds the app and attaches a DMG to a DRAFT release, so a
+# person reviews it before anything is published. See docs/releasing.md.
+on:
+  push:
+    tags: ["v*"]
+
+# Read-only by default. Only the final job, which runs none of the project's code, may write.
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    # Apple Silicon runner; the bundle is still universal2 (arm64 + x86_64).
+    runs-on: macos-14
+    timeout-minutes: 60
+    # Hold the signing secrets in this environment and add required reviewers to it (see
+    # docs/releasing.md), so a pushed tag alone cannot reach them.
+    environment: release
+    env:
+      # The python.org installer is universal2 (the hosted Python is not), and its hash is
+      # pinned. Change the version and the hash together.
+      PYTHON_VERSION: "3.14.2"
+      PYTHON_PKG_SHA256: fc98ed71cd7b76d1ac19a31ef1641d177854ebec54413ffe3666767ead77ebb7
+      # Whether a signing certificate is configured. The secrets themselves are exposed
+      # only to the steps that need them, never to the install and test steps below.
+      HAS_CERT: ${{ secrets.MACOS_CERTIFICATE != '' }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Install a universal2 Python
+        run: |
+          curl -fsSL --proto '=https' --tlsv1.2 -o python.pkg \
+            "https://www.python.org/ftp/python/$PYTHON_VERSION/python-$PYTHON_VERSION-macos11.pkg"
+          echo "$PYTHON_PKG_SHA256  python.pkg" | shasum -a 256 -c -
+          sudo installer -pkg python.pkg -target /
+          minor="${PYTHON_VERSION%.*}"
+          "/Library/Frameworks/Python.framework/Versions/$minor/bin/python$minor" -m venv .venv
+          .venv/bin/pip install -e '.[dev,build]'
+
+      - name: Check the tag matches the code's version
+        run: |
+          version="$(.venv/bin/python -c 'import muteme_flow; print(muteme_flow.__version__)')"
+          base="${GITHUB_REF_NAME#v}"; base="${base%%-*}"  # v1.0.0-rc1 releases 1.0.0
+          if [ "$base" != "$version" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match the code's version $version." >&2
+            exit 1
+          fi
+
+      - name: Lint and test
+        run: |
+          .venv/bin/ruff check .
+          .venv/bin/ruff format --check .
+          .venv/bin/pytest
+
+      - name: Import the signing certificate
+        if: env.HAS_CERT == 'true'
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          MACOS_SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          if [ -z "$MACOS_SIGN_IDENTITY" ]; then
+            echo "MACOS_SIGN_IDENTITY is empty; refusing to fall back to an unsigned build." >&2
+            exit 1
+          fi
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          password="$(uuidgen)"
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          echo "$MACOS_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          security import "$RUNNER_TEMP/certificate.p12" -k "$keychain" \
+            -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          rm -f "$RUNNER_TEMP/certificate.p12"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$password" "$keychain"
+          security list-keychains -d user -s "$keychain" login.keychain
+          xcrun notarytool store-credentials ci --keychain "$keychain" \
+            --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD"
+          {
+            echo "SIGN_IDENTITY=$MACOS_SIGN_IDENTITY"
+            echo "NOTARY_PROFILE=ci"
+            echo "NOTARY_KEYCHAIN=$keychain"
+          } >> "$GITHUB_ENV"
+
+      - name: Build the app
+        run: scripts/build_app.sh
+
+      - name: Notarize the app
+        if: env.HAS_CERT == 'true'
+        run: scripts/notarize.sh "dist/MuteMe Flow.app"
+
+      - name: Build the DMG
+        run: scripts/make_dmg.sh
+
+      - name: Notarize the DMG
+        if: env.HAS_CERT == 'true'
+        run: scripts/notarize.sh dist/MuteMe-Flow-*.dmg
+
+      - name: Write the release notes
+        run: |
+          if [ "$HAS_CERT" = true ]; then
+            echo "Signed and notarized: open the DMG and drag the app to Applications." > notes.md
+          else
+            cat > notes.md <<'NOTES'
+          **This build is not notarized.** After dragging MuteMe Flow to Applications,
+          right-click the app and choose Open the first time (macOS will otherwise refuse it).
+          NOTES
+          fi
+          {
+            echo
+            echo "SHA-256:"
+            echo '```'
+            (cd dist && shasum -a 256 MuteMe-Flow-*.dmg)
+            echo '```'
+          } >> notes.md
+
+      - name: Remove the signing keychain
+        if: always() && env.HAS_CERT == 'true'
+        run: |
+          security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true
+          rm -f "$RUNNER_TEMP/certificate.p12"
+
+      - name: Keep the build for the release job
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release
+          path: |
+            dist/MuteMe-Flow-*.dmg
+            notes.md
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # The only job with write access. It runs no project code, only the gh CLI.
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Fetch the build
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release
+
+      - name: Draft the release
+        run: |
+          # If a draft for this tag already exists from an earlier run, delete it first
+          # (docs/releasing.md); GitHub does not stop a second draft being created.
+          flags=(--draft)
+          case "$GITHUB_REF_NAME" in *-*) flags+=(--prerelease) ;; esac
+          gh release create "$GITHUB_REF_NAME" MuteMe-Flow-*.dmg "${flags[@]}" \
+            --title "MuteMe Flow $GITHUB_REF_NAME" --notes-file notes.md --generate-notes

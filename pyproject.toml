@@ -24,7 +24,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.6"]
+# pyyaml: tests/test_packaging.py parses the release workflow to check its structure.
+dev = ["pytest>=8", "ruff>=0.6", "pyyaml>=6"]
 build = ["py2app==0.28.10"]
 
 [project.scripts]

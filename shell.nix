@@ -8,6 +8,7 @@ pkgs.mkShell {
     jq
     python3
     python3Packages.pytest
+    python3Packages.pyyaml
     ruff
   ];
 
