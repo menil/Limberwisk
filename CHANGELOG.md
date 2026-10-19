@@ -3,6 +3,14 @@
 All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.2.0](https://github.com/menil/wisprflow-muteme-bridge/compare/v0.1.0...v0.2.0) (2026-10-19)
+
+
+### Features
+
+* build releases from the release PR without a personal token ([6161af2](https://github.com/menil/wisprflow-muteme-bridge/commit/6161af269a0c0a675b7517f0eaffb925763ceeeb))
+* open release pull requests that tag and draft each release ([a57a00d](https://github.com/menil/wisprflow-muteme-bridge/commit/a57a00d238bc0232ba1c08ec3dcc242a45754d7c))
+
 ## [0.1.0] - 2026-10-19
 
 First release, unsigned and not notarized. See `docs/manual-tests.md` for what still needs
