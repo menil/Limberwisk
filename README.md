@@ -1,66 +1,73 @@
-# My Project
+# MuteMe Flow
 
-A generic, modern project pre-configured with developer tooling, Nix integration, and CI validation.
+A lightweight macOS menu bar app that turns a **MuteMe** USB button into a
+push-to-talk / tap-to-toggle control for **Wispr Flow** dictation, with the button's
+LED showing whether you are dictating.
 
-## Features
+> MuteMe Flow is an independent open-source project and is not affiliated with,
+> endorsed by, or sponsored by MuteMe or Wispr Flow.
 
-- 🤖 **Automated PR Reviews**: Integrated via `menil/pr-code-review-action` with support for Anthropic (API key or Claude Code subscription token) and OpenRouter (free tier by default).
-- ❄️ **Nix Shell**: Pre-configured `shell.nix` for consistent, reproducible developer environments.
-- 🛠️ **Local Task Runner (`Justfile`)**: Standardized commands for formatting, linting, and validating code.
-- 🛡️ **Git Hooks**: Pre-configured conventional commit title checks and automatic pre-commit quality checks.
-- ⚡ **Direnv Ready**: Automatically configures local git hooks and Beads issue tracking upon entering the directory.
-- ✅ **CI Validation**: A `validate` GitHub Actions workflow runs `just validate` on every push/PR, so checks aren't only enforced by the (bypassable) local pre-commit hook.
+## Status
 
----
+Early development: the menu bar app is not built yet. The intended behaviour is defined
+in [`specs/spec.md`](specs/spec.md):
 
-## Getting Started
+- **Tap** the button to start dictation, tap again to stop (hands-free).
+- **Hold** the button to dictate while held (push-to-talk).
+- The LED is red when idle and green while dictating (best-effort: the app cannot read
+  Wispr Flow's real state, see spec section 4.3).
 
-### 1. Configure GitHub Secrets
+## Supported devices
 
-For automated PR code reviews to run successfully, navigate to your new repository's **Settings > Secrets and variables > Actions** and configure at least one of the following:
+| Device | USB ID | Status |
+| :--- | :--- | :--- |
+| MuteMe Original (current generation) | `0x3603:0x0001` | Verified on hardware |
+| MuteMe Mini variants | `0x3603:0x0002`–`0x0004` | Untested |
+| Legacy MuteMe Original / Mini | `0x20A0:0x42DA` / `0x42DB` | Untested |
 
-* **`ANTHROPIC_API_KEY`**: Your Anthropic API Key (or **`CLAUDE_CODE_OAUTH_TOKEN`** for Claude Code subscription tokens).
-* **`OPENROUTER_API_KEY`**: Your OpenRouter API Key (used as default/fallback).
+The untested devices are enabled on a best-effort basis; reports from owners are welcome.
 
-*(Note: The template uses GitHub's Action Sharing to fetch `menil/pr-code-review-action` keylessly. Ensure you have configured the action repository under **Settings > Actions > General > Access** to be accessible from other repositories owned by your user account).*
+## Requirements
 
----
-## Development Environment
+- macOS 13 or later
+- Wispr Flow installed
+- The official MuteMe app must be quit; it competes for the device and resets the LED
 
-### Nix Shell
-Activate the Nix developer shell to load project tools:
+## Development
+
+The pure-Python logic is covered by unit tests that need no device, no Wispr Flow and
+no macOS frameworks, so they also run on Linux CI.
+
 ```bash
-nix-shell
+nix-shell                      # tools: just, ruff, pytest, python
+just validate                  # lint + format check + tests
 ```
 
-### Task Runner (`Justfile`)
-The following tasks are available via `just`:
-- `just`: List all available tasks.
-- `just format`: Format code and configuration files.
-- `just lint`: Run code and markdown linters.
-- `just validate`: Execute all formatting, linting, and verification checks.
+To run against real hardware, create a virtual environment on macOS:
 
-### Git Hook Checks
-The project automatically configures local Git hooks:
-- **`commit-msg`**: Validates that all commit titles adhere to the [Conventional Commits](https://www.conventionalcommits.org/) standard (e.g. `feat: add database support`).
-- **`pre-commit`**: Automatically runs `just validate` before allowing a commit. If any check fails, the commit is aborted.
-
-These hooks only run locally and can be skipped (`git commit --no-verify`) or simply never installed (e.g. a contributor who hasn't run `direnv allow`, or a commit made through GitHub's web UI). The `validate` GitHub Actions workflow (`.github/workflows/validate.yml`) runs the same `just validate` in CI on every push and pull request as a backstop that can't be bypassed the same way.
-
-### Beads Issue Tracking
-`.beads/` (Beads' local issue database) is gitignored, so each clone provisions its own: `.envrc` runs `bd init --skip-agents --init-if-missing` on every `cd` into the repo, and `bd` itself no-ops once it's already initialized. `--skip-agents` deliberately omits `bd init`'s own `AGENTS.md`/`CLAUDE.md`/`.codex/`/`.claude/` generation: those agent instructions are already deployed globally to Claude Code, OpenCode, Codex, Gemini, and Pi via this machine's dotfiles (home-manager config), so a per-repo copy would just be a stale duplicate that's also at odds with the standing "don't commit agent-config directories" rule.
-
-### AI Agent Ignore Files
-`.agentignore` at the repo root is the canonical, gitignore-syntax list of paths AI coding agents shouldn't read (dependencies, build output, secrets, caches, etc.). Where an agent supports it, its ignore file is a symlink to `.agentignore` so the pattern list never drifts:
-
-- **Google Antigravity**: `.antigravityignore` → `.agentignore`. Note there are [open reports](https://github.com/google-antigravity/antigravity-cli/issues/309) that the Antigravity CLI doesn't always fully respect this file in practice.
-- **OpenCode**: has no native ignore-file support yet. The closest option is the community [`opencode-ignore`](https://github.com/lgladysz/opencode-ignore) plugin, which you install via `opencode.json` and which reads a `.ignore` file. If you adopt it, symlink `.ignore` to `.agentignore` the same way.
-- **Claude Code**: has **no** `.claudeignore` (or any other external ignore-file) mechanism — a symlink here would be inert. It automatically respects `.gitignore`. For checked-in paths it can't reach that way (e.g. lock files, vendored code), Claude Code supports `Read` deny rules in `.claude/settings.json` — see the [large-codebases guide](https://code.claude.com/docs/en/large-codebases.md#block-reads-of-generated-and-vendored-code). This repo ships a pre-generated `.claude/settings.json` (tracked in git, like Claude Code's own convention for shared project settings — only `.claude/settings.local.json` is gitignored) so it's enforced out of the box.
-
-To update the pattern list, edit `.agentignore` — the symlinked files pick up the change automatically. For Claude Code, add corresponding `Read(...)` deny rules directly to `.claude/settings.json` (or pull template updates via `copier update`).
-
-### Upstream Template Updates
-This project was scaffolded with [Copier](https://copier.readthedocs.io/). To pull in upstream updates (tooling, hooks, CI improvements) from `project-template`:
 ```bash
-copier update
+python3 -m venv .venv
+.venv/bin/pip install -e '.[dev,build]'   # build adds py2app for the packaging spike
 ```
+
+Spikes that need a real device or Wispr Flow live in [`spikes/`](spikes/); each has its
+own instructions.
+
+## Repository tooling
+
+- **Git hooks** (`.githooks/`, enabled by `direnv allow`): `commit-msg` enforces
+  [Conventional Commits](https://www.conventionalcommits.org/) titles and `pre-commit` runs
+  `just validate`. They only run locally; the `validate` workflow
+  (`.github/workflows/validate.yml`) runs the same checks in CI on every push and pull
+  request as a backstop.
+- **Automated PR review** (`.github/workflows/pr-review.yml`): needs the repository secret
+  `ANTHROPIC_API_KEY` (or `CLAUDE_CODE_OAUTH_TOKEN`) and/or `OPENROUTER_API_KEY`, and the
+  action repository must be shared with this one under *Settings > Actions > General*.
+- **Beads issue tracking:** `.beads/` is gitignored; `.envrc` provisions a local database on
+  `cd` into the repo.
+- **Template updates:** the project was scaffolded with
+  [Copier](https://copier.readthedocs.io/); run `copier update` to pull upstream tooling changes.
+
+## License
+
+[MIT](LICENSE)

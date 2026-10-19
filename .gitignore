@@ -66,3 +66,4 @@ pr.diff
 # Beads / Dolt files (added by bd init)
 *.gate.lock*
 
+*.egg-info/

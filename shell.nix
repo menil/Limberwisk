@@ -6,9 +6,12 @@ pkgs.mkShell {
     gh
     just
     jq
+    python3
+    python3Packages.pytest
+    ruff
   ];
 
   shellHook = ''
-    echo "❄️ Welcome to the My Project shell!"
+    echo "❄️ MuteMe Flow dev shell"
   '';
 }

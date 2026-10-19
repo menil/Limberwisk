@@ -1,0 +1,49 @@
+[build-system]
+# 77 is the first release that understands the SPDX `license` string and `license-files`.
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "muteme-flow"
+dynamic = ["version"]
+description = "macOS menu bar bridge between a MuteMe USB button and Wispr Flow"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+# 3.12 keeps the pure-Python test suite runnable on the Linux CI image; the
+# shipped app targets 3.14 (see specs/spec.md section 7.1).
+requires-python = ">=3.12"
+dependencies = [
+    # Pinned exactly because the shipped .app bundles these versions. macOS-only: the
+    # app talks to AppKit and USB HID, and the markers keep `pip install -e .[dev]`
+    # working on Linux CI, where only the pure logic runs.
+    "hidapi==0.15.0; sys_platform == 'darwin'",
+    "rumps==0.4.0; sys_platform == 'darwin'",
+    "pyobjc-framework-Cocoa==12.2.2; sys_platform == 'darwin'",
+    "pyobjc-framework-ServiceManagement==12.2.2; sys_platform == 'darwin'",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+build = ["py2app==0.28.10"]
+
+[project.scripts]
+muteme-flow = "muteme_flow.__main__:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "muteme_flow.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+# "tests" is on the path so test modules can import the shared `support` package.
+pythonpath = ["src", "tests"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "N", "PT"]
