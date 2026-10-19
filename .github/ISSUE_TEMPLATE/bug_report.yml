@@ -1,0 +1,37 @@
+name: Bug report
+description: The button, the light or the menu bar item is not doing what it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check the [Troubleshooting](https://github.com/menil/wisprflow-muteme-bridge#troubleshooting)
+        table first. The status line in the menu bar names most problems.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you did (tap, hold, unplug, sleep the Mac) and what you saw (the light colour, the menu status), and what you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: |
+        Choose **Copy Diagnostics** in the menu bar item and paste the result. It has the versions,
+        the device model and recent log lines with your home folder removed, and never audio or
+        dictated text. If the menu bar item is missing, say so instead.
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install it?
+      options:
+        - The DMG from the Releases page
+        - Built it myself
+        - Running from source
+    validations:
+      required: true

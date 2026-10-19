@@ -1,0 +1,32 @@
+version: 2
+
+# Titles use Conventional Commit types that release-please does not turn into a release
+# (only feat and fix do), so a dependency bump never opens a release PR by itself.
+updates:
+  # Every action is pinned to a commit SHA, which Dependabot keeps current.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "ci"
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # The dependencies in pyproject.toml are pinned exactly because the shipped .app bundles
+  # them. The PR checks run the unit tests only, so build and run the app with
+  # scripts/build_app.sh before merging a bump of anything the bundle contains.
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "build"
+      include: scope
+    groups:
+      # The PyObjC frameworks have to move together, and py2app must match what it bundles.
+      bundled:
+        patterns: ["hidapi", "rumps", "pyobjc-*", "py2app"]
+      dev-tools:
+        patterns: ["pytest*", "ruff", "pyyaml"]
