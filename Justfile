@@ -4,13 +4,19 @@
 default:
     @just --list
 
-# Format code and configuration files
+# Format code
 format:
-    @echo "No formatter configured yet. Customize this recipe in the Justfile!"
+    ruff format .
+    ruff check --fix .
 
-# Run code and markdown linting checks
+# Run linting checks (code style and formatting)
 lint:
-    @echo "No linter configured yet. Customize this recipe in the Justfile!"
+    ruff check .
+    ruff format --check .
+
+# Run the unit tests (pure Python; no device, Wispr Flow or macOS frameworks needed)
+test:
+    pytest
 
 # Run all local checks (tests, format checks, lints)
-validate: lint
+validate: lint test

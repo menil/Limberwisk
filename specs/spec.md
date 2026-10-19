@@ -215,7 +215,7 @@ The app runs with `LSUIElement = True` (no Dock icon), presenting a native macOS
 ## 7. Packaging & Distribution Specification
 
 ### 7.1 Tech Stack
-* **Runtime:** Python 3.14+ (the current dev machine has 3.14.2). Whether `py2app` and a universal2 `hidapi` wheel work on 3.14 must be proven in a spike before committing to this stack.
+* **Runtime:** Python 3.14+ (the current dev machine has 3.14.2). `py2app` 0.28.10 builds a working bundle on 3.14; the universal2 caveats for `hidapi` are in section 10.1.
 * **Core Libraries:** `hidapi` (import name `hid`), `rumps` + `PyObjC` (menu bar, `NSWorkspace` URL dispatch, `ServiceManagement`).
 * **Minimum macOS:** 13 (for `SMAppService`).
 * **Packager:** `py2app` generating a standalone universal `.app` bundle.
@@ -245,6 +245,7 @@ The app runs with `LSUIElement = True` (no Dock icon), presenting a native macOS
 ### 8.2 Known Risks
 * Wispr Flow's URL scheme is undocumented and may change; pin and document the tested version range (verified: 1.6.1174) and surface a clear error when commands have no effect.
 * Mini and legacy device IDs are unverified (section 3.1).
+* `rumps` 0.4.0 is old and lightly maintained; the menu bar layer is thin enough to replace with PyObjC directly if it breaks on a future macOS.
 * Signed-bundle Input Monitoring behaviour is untested (section 7.2).
 
 ---
@@ -260,7 +261,18 @@ The app runs with `LSUIElement = True` (no Dock icon), presenting a native macOS
 
 1. Do the section 4.2 command semantics hold when dispatching through `NSWorkspace.openURLs` with `activates=False`, and does it keep focus? (Hard gate before implementation, see section 4.2.)
 2. Does a signed, notarized `.app` bundle need an Input Monitoring grant to read the device, and does the grant survive re-signing?
-3. Do `py2app` and a universal2 `hidapi` wheel work on Python 3.14?
+3. ~~Do `py2app` and a universal2 `hidapi` wheel work on Python 3.14?~~ Resolved, see section 10.1.
 4. Do the Mini variants and legacy `0x20A0` devices behave like the verified `0x3603:0x0001` (report layout, LED codes)?
 5. How does the idle heartbeat behave when the official MuteMe app is also running?
 6. Is there a Developer ID certificate for signing and notarization, or does v1 ship unsigned with a documented workaround?
+
+### 10.1 Spike Log
+
+**Packaging spike (question 3), run 2026-10-19:** python.org Python 3.14.2 (universal2 framework build), `py2app` 0.28.10, `rumps` 0.4.0, `hidapi` 0.15.0, PyObjC 12.2.2. Source: `spikes/packaging/`.
+* A minimal menu bar bundle (`LSUIElement`) builds, launches, and stays running with no crash report. The main executable, PyObjC extensions and `rumps` are universal2.
+* **`hidapi` 0.15.0 publishes only an arm64 wheel for cp314 on macOS**, so a bundle built from PyPI wheels is not universal: `hid.so` is arm64-only and would fail to import on an Intel Mac. Building `hidapi` from its sdist with `ARCHFLAGS="-arch arm64 -arch x86_64"` and a clean `PATH` (Apple's clang) yields a `macosx_10_15_universal2` wheel; the rebuilt bundle's `hid.so` verified universal with `lipo`. The release pipeline must build this wheel in CI (milestone 5). Fallback if that proves fragile: ship arm64-only.
+* The Intel slice was verified with `lipo` only; it has never been executed.
+* **Build gotchas:** `setup_requires=["py2app"]` hung while resolving; the strip step hung when a Nix-provided `strip` was first on `PATH`. The spike disables stripping (`"strip": False`) and builds with a clean `PATH`; the release build must do the same or run outside the Nix shell.
+* The unstripped bundle is 76 MB on disk (it includes Tcl/Tk); exclude `tkinter` in the real build. Memory use was not measured.
+
+**`NSWorkspace` dispatch spike (question 1, section 4.2 hard gate): not yet run.** The harness is `spikes/nsworkspace_dispatch/run.py`. It starts real dictation and needs an operator to answer prompts and to switch applications once for its focus self-test, so it is deferred to the manual test pass. Its latency column measures the time until LaunchServices confirms the hand-off, which is a lower bound for the dispatch leg of the 25ms goal, not the whole goal. Until its results are recorded here, the gate in section 4.2 is **unsatisfied**.
