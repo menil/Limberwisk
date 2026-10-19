@@ -235,9 +235,10 @@ The app runs with `LSUIElement = True` (no Dock icon), presenting a native macOS
 * **Packager:** `py2app` generating a standalone universal `.app` bundle.
 
 ### 7.2 Release Artifact
-* Automated GitHub Actions matrix builds `MuteMe Flow.dmg` containing `MuteMe Flow.app` and an `/Applications` symlink.
-* **Signing and notarization:** the app is signed with a Developer ID certificate and notarized in CI. An unsigned build is blocked by Gatekeeper and forces a right-click-Open workaround, so "zero terminal interaction" holds only for signed releases. If no Developer ID is available, v1 ships unsigned with that workaround documented.
-* **Input Monitoring:** a plain Python process opened the device and read reports without a permission prompt. Behaviour of a signed `.app` bundle is untested and is a release risk: the TCC grant is tied to the signing identity, so an unsigned or re-signed build may lose it.
+* `scripts/build_app.sh` and `scripts/make_dmg.sh` build `MuteMe-Flow-<version>.dmg` (no spaces, because GitHub rewrites them in asset names) containing `MuteMe Flow.app` and an `/Applications` symlink. Pushing a `v*` tag runs `.github/workflows/release.yml`, which builds on a macOS runner and creates a **draft** release for a person to publish; the tag must equal the code's version. See `docs/releasing.md` for how, including the secrets and their scoping.
+* `build_app.sh` fails if any native binary in the bundle is single-architecture, and builds the universal2 `hidapi` wheel from source.
+* **Signing and notarization:** the app is signed with a Developer ID certificate and notarized in CI. An unsigned build is blocked by Gatekeeper and forces a right-click-Open workaround, so "zero terminal interaction" holds only for signed releases. If no Developer ID is available, v1 ships ad-hoc signed with that workaround documented (verified: Gatekeeper reports such a build as `rejected`, so the right-click-Open step is needed on a downloaded copy). The signing script was run with an ad-hoc identity: every native library in the bundle was signed with the hardened runtime (not just the top level, which `codesign --deep` would have done), and the app launched, attached the device and quit cleanly under it, so the entitlements in `packaging/entitlements.plist` suffice for Python, PyObjC and hidapi. The notarization script and signing with a real Developer ID have **never been run**, since no certificate was available; expect to iterate on them.
+* **Input Monitoring:** a plain Python process, and then the ad-hoc-signed packaged app, opened the device and kept receiving reports on the development Mac (macOS 26) without any permission prompt. Behaviour of a Developer-ID-signed build is untested and remains a release risk: if a grant is ever required it is tied to the signing identity, so a re-signed build may lose it.
 
 ---
 
@@ -275,7 +276,7 @@ The app runs with `LSUIElement = True` (no Dock icon), presenting a native macOS
 ## 10. Open Questions
 
 1. Do the section 4.2 command semantics hold when dispatching through `NSWorkspace.openURLs` with `activates=False`, and does it keep focus? (Hard gate before implementation, see section 4.2.)
-2. Does a signed, notarized `.app` bundle need an Input Monitoring grant to read the device, and does the grant survive re-signing?
+2. Does a Developer-ID-signed, notarized `.app` bundle need an Input Monitoring grant to read the device, and does it survive re-signing? (An ad-hoc-signed bundle needed none; see section 7.2.)
 3. ~~Do `py2app` and a universal2 `hidapi` wheel work on Python 3.14?~~ Resolved, see section 10.1.
 4. Do the Mini variants and legacy `0x20A0` devices behave like the verified `0x3603:0x0001` (report layout, LED codes)?
 5. How does the idle heartbeat behave when the official MuteMe app is also running?
@@ -284,10 +285,10 @@ The app runs with `LSUIElement = True` (no Dock icon), presenting a native macOS
 ### 10.1 Spike Log
 
 **Packaging spike (question 3), run 2026-10-19:** python.org Python 3.14.2 (universal2 framework build), `py2app` 0.28.10, `rumps` 0.4.0, `hidapi` 0.15.0, PyObjC 12.2.2. Source: `spikes/packaging/`.
-* A minimal menu bar bundle (`LSUIElement`) builds, launches, and stays running with no crash report. The main executable, PyObjC extensions and `rumps` are universal2.
+* A minimal menu bar bundle (`LSUIElement`) builds, launches, and stays running with no crash report. The main executable, PyObjC extensions and `rumps` are universal2. **Correction:** that spike only checked that the process stayed alive. Launching the first build of the real app showed the bundle could not `import hid` (`SyntaxError: source code string cannot contain null bytes`): the spike's `packages: ["hid"]` made py2app copy the extension's binary into a `hid.py` that shadows the real module. Listing `hid` under `includes` instead fixes it, and the real app was then verified by launching it and seeing it attach the device.
 * **`hidapi` 0.15.0 publishes only an arm64 wheel for cp314 on macOS**, so a bundle built from PyPI wheels is not universal: `hid.so` is arm64-only and would fail to import on an Intel Mac. Building `hidapi` from its sdist with `ARCHFLAGS="-arch arm64 -arch x86_64"` and a clean `PATH` (Apple's clang) yields a `macosx_10_15_universal2` wheel; the rebuilt bundle's `hid.so` verified universal with `lipo`. The release pipeline must build this wheel in CI (milestone 5). Fallback if that proves fragile: ship arm64-only.
 * The Intel slice was verified with `lipo` only; it has never been executed.
-* **Build gotchas:** `setup_requires=["py2app"]` hung while resolving; the strip step hung when a Nix-provided `strip` was first on `PATH`. The spike disables stripping (`"strip": False`) and builds with a clean `PATH`; the release build must do the same or run outside the Nix shell.
-* The unstripped bundle is 76 MB on disk (it includes Tcl/Tk); exclude `tkinter` in the real build. Memory use was not measured.
+* **Build gotchas:** `setup_requires=["py2app"]` hung while resolving; the strip step hung when a Nix-provided `strip` was first on `PATH`. The build disables stripping (`"strip": False`) and uses a clean `PATH`. py2app must also be run from a directory without `pyproject.toml` (setuptools otherwise reads its dependencies as `install_requires`, which py2app rejects), so `scripts/build_app.sh` runs it from `packaging/`.
+* The real app's bundle is 55 MB on disk (build tooling and unused standard-library parts excluded) and its DMG about 30 MB. Memory use is measured in milestone 6.
 
 **`NSWorkspace` dispatch spike (question 1, section 4.2 hard gate): not yet run.** The harness is `spikes/nsworkspace_dispatch/run.py`. It starts real dictation and needs an operator to answer prompts and to switch applications once for its focus self-test, so it is deferred to the manual test pass. Its latency column measures the time until LaunchServices confirms the hand-off, which is a lower bound for the dispatch leg of the 25ms goal, not the whole goal. Until its results are recorded here, the gate in section 4.2 is **unsatisfied**.
