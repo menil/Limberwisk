@@ -83,7 +83,6 @@ Unverified pairs ship enabled but are flagged in the README until confirmed by a
 The state machine implements **Dual-Mode Operation**. It is driven by touch **edges** (see section 3.2), never by raw report levels:
 * **$T_{\text{hold}} = 350\text{ms}$**: a tunable default, stored in `UserDefaults`. The bridge implements hold/tap detection itself, so it does not depend on any Wispr Flow constant. A deliberate quick tap measured 123ms, which leaves comfortable margin.
 * **$T_{\text{debounce}} = 30\text{ms}$**: a touch-down within this window of the previous touch-up is ignored. The observed sequences (`4,1…,2,0`) are clean, so this is a conservative default to be tuned during implementation.
-* **$T_{\text{latch}} = 0\text{ms}$** by default (see 4.2).
 
 ```mermaid
 stateDiagram-v2
@@ -133,7 +132,7 @@ Observed on one machine by firing the URLs through the `open -g` command-line to
 If the spike contradicts the table, this section and the state machine are revised before any code is written. Until the spike passes, treat every row above as unconfirmed.
 
 Consequences:
-* The originally proposed latch guard is not needed for correctness. The bridge keeps it only as an optional safety margin ($T_{\text{latch}}$, default `0`); if non-zero, a stop within $T_{\text{latch}}$ of the start is delayed by the remainder.
+* The originally proposed latch guard (delaying an early stop) is not needed for correctness and was removed from the design, along with its timer and the extra lifecycle paths it required. Re-add it only if testing on the real app shows dropped stops.
 * If the idempotence findings hold, the bridge may re-send the command matching its own state (for example, a stop on every return to `IDLE`) to resync after drift.
 * The URL scheme is undocumented. A regression run against the real app is required before each release (section 8).
 
@@ -142,8 +141,10 @@ The channel to Wispr is one-way, so the LED reflects **button state**, not Wispr
 
 ### 4.4 Wispr Flow Not Running
 Dispatching a `wispr-flow://` URL launches Wispr Flow if it is not running, which would be an unexpected side effect of touching a mute button. Therefore:
-* Wispr Flow's presence is tracked via `NSWorkspace.runningApplications` (bundle identifier `com.electron.wispr-flow`, read from the installed app's `Info.plist`) plus launch/terminate notifications.
+* Wispr Flow's presence is tracked via a startup check with `NSRunningApplication.runningApplicationsWithBundleIdentifier:` (a class method of `NSRunningApplication`, not `NSWorkspace`; bundle identifier `com.electron.wispr-flow`, read from the installed app's `Info.plist`) plus `NSWorkspace` launch/terminate notifications.
 * While it is not running, **touches are swallowed** (no URL is dispatched) and the LED shows **Blue**.
+* The presence is re-queried on each launch/terminate notification rather than inferred from it (a second copy quitting must not read as "not running"), and observers are registered before the first check so no launch is missed.
+* A small race remains: if Wispr quits in the instant between the notification and a dispatch, that dispatch relaunches it. The window is microseconds and the consequence mild, so it is accepted.
 * When it launches, the LED returns to **Red** (`IDLE`). If it quits while a recording state is active, the state machine returns to `IDLE` and the LED shows Blue.
 
 ### 4.5 Lifecycle and Edge Cases
@@ -161,6 +162,8 @@ Dispatching a `wispr-flow://` URL launches Wispr Flow if it is not running, whic
 * **Main thread:** owns rumps/AppKit, menu state, and `NSWorkspace` URL dispatch.
 * **State machine:** runs on the main thread. The HID thread forwards decoded edge events (`DOWN`, `UP`, `DISCONNECTED`) to it via the main run loop, and the state machine posts LED requests back to the HID thread through a queue. This keeps all state transitions single-threaded and the hold timer a plain main-loop timer.
 * **`hidapi` must be imported on the main thread.** On macOS the `hid` module initialises its HID manager on the importing thread's run loop, and the interpreter's exit hook then tears it down from the main thread; importing it first on a worker thread crashes the process at exit (SIGTRAP in `CFRunLoopRemoveSource`, reproduced 6 of 6 times; 0 of 6 when imported on the main thread). The app preloads it at startup before starting the HID thread, and the adapter refuses a first import off the main thread.
+* **Gesture timing uses the time the HID thread saw each event**, not the time the main thread got to it. Tap versus hold is decided by how long the finger was actually down (`up - down >= T_hold`), and the hold timer only promotes to push-to-talk early. A busy main thread therefore cannot turn a quick tap into a hold.
+* **Timers and main-thread posts run in the common run-loop modes** (`NSRunLoopCommonModes`, and the main operation queue), so they keep firing while a menu is open (event-tracking mode).
 * The extra hop is expected to cost well under the 25ms dispatch goal (section 8); measure it, since the goal is unproven.
 
 ### 4.7 URL Dispatch Failure
@@ -169,13 +172,16 @@ Dispatching a `wispr-flow://` URL launches Wispr Flow if it is not running, whic
 * **Start fails:** return to `IDLE`, flash the LED **Yellow** for ~1s then **Red**, set the menu status to `Status: Wispr command failed`, and log the error.
 * **Stop fails:** still return to `IDLE` (the user's intent is to stop), apply the same Yellow flash, status and logging, and set a `pendingStop` flag. Because stop is idempotent (section 4.2), the next touch-down re-sends `stop-hands-free` before handling the touch.
 * Three consecutive failures keep the menu status on the error until a dispatch succeeds, so a persistent problem stays visible.
+* **Completions are matched to what they belong to.** Results can arrive late and out of order, so each command is numbered and each recording has a generation: a late START failure only abandons the recording it started, a stop that failed after Wispr quit is not repeated, and an older stop's success does not erase a newer stop's failure.
+* A dispatcher that raises synchronously is treated as a failed dispatch (delivered asynchronously, so the state machine is never re-entered mid-transition).
+* **Quitting is terminal.** After the final stop is sent the state machine ignores everything, so a touch during the shutdown drain cannot start a new recording and a failed final stop cannot repaint the LED. The app waits (bounded) for that stop's completion before exiting.
 
 ---
 
 ## 5. Conflict Resolution & Process Monitoring
 
 Because the official MuteMe companion app attempts exclusive USB-HID communication and resets LEDs:
-1. **Detection:** One check of `NSWorkspace.runningApplications` at startup, then `NSWorkspace` launch/terminate notifications, for the official app's bundle identifier (confirmed against a real install before release). There is no polling loop, which keeps idle CPU near zero and avoids races during app startup and shutdown. Matching on display name alone is fragile.
+1. **Detection:** One startup check with `NSRunningApplication.runningApplicationsWithBundleIdentifier:`, then `NSWorkspace` launch/terminate notifications, for the official app's bundle identifier (confirmed against a real install before release). There is no polling loop, which keeps idle CPU near zero and avoids races during app startup and shutdown. Matching on display name alone is fragile.
 2. **UI Indication:** If detected, the menu bar title displays `🎙️⚠️` with a menu item:
    `"⚠️ Official MuteMe app is running (click to quit)"`. Clicking requests a polite `terminate()` after a confirmation, never a force kill.
 3. **LED Indication:** The hardware LED shifts to **Yellow** until the conflict is resolved. Yellow has priority over Red and Green.

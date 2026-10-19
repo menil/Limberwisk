@@ -21,6 +21,11 @@ class FakeHidDevice:
         # Idents of every thread that touched the device, to check the one-thread rule.
         self.call_threads: set[int] = set()
 
+    @property
+    def pending_reports(self) -> int:
+        """Reports queued but not yet read; lets a test wait until the device is drained."""
+        return len(self._queue)
+
     def feed(self, *reports: list[int]) -> None:
         self._queue.extend(list(r) for r in reports)
 
