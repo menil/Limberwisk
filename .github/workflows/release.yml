@@ -115,6 +115,9 @@ jobs:
           # prefix, so the release job's glob found nothing (found by the first run).
           mkdir release
           cp dist/MuteMe-Flow-*.dmg release/
+          # The same file under a name without the version, so the README can link to
+          # releases/latest/download/MuteMe-Flow.dmg and always get the newest release.
+          cp dist/MuteMe-Flow-*.dmg release/MuteMe-Flow.dmg
           if [ "$HAS_CERT" = true ]; then
             echo "Signed and notarized: open the DMG and drag the app to Applications." > release/notes.md
           else
@@ -171,5 +174,5 @@ jobs:
           # (docs/releasing.md); GitHub does not stop a second draft being created.
           flags=(--draft)
           case "$GITHUB_REF_NAME" in *-*) flags+=(--prerelease) ;; esac
-          gh release create "$GITHUB_REF_NAME" MuteMe-Flow-*.dmg "${flags[@]}" \
+          gh release create "$GITHUB_REF_NAME" MuteMe-Flow-*.dmg MuteMe-Flow.dmg "${flags[@]}" \
             --title "MuteMe Flow $GITHUB_REF_NAME" --notes-file notes.md --generate-notes

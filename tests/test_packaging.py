@@ -275,3 +275,17 @@ def test_unsigned_release_notes_explain_open_anyway_for_macos_15(workflow):
     # Settings instead (they once told everyone to right-click).
     stage = steps(workflow)[step_index(workflow, "Stage the release files")]
     assert "Open Anyway" in stage["run"]
+
+
+def test_the_readme_download_link_names_a_file_every_release_uploads(workflow):
+    # releases/latest/download/<name> only works if each release carries <name> exactly, so
+    # the README link and the release job must agree. A versioned name could not be linked.
+    readme = (ROOT / "README.md").read_text()
+    links = re.findall(r"releases/latest/download/([\w.-]+)\)", readme)
+    assert len(links) == 1, f"expected exactly one download link in the README, found {links}"
+    name = links[0]
+    assert not re.search(r"\d", name), f"the linked name must not carry a version: {name}"
+    stage = steps(workflow)[step_index(workflow, "Stage the release files")]
+    (draft,) = [s for s in steps(workflow, "release") if s.get("name") == "Draft the release"]
+    assert f"release/{name}" in stage["run"]
+    assert name in draft["run"]
