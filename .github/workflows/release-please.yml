@@ -1,0 +1,29 @@
+name: Release PR
+
+# Keeps one "release" pull request open on main. It bumps the version and the changelog from
+# the Conventional Commit titles. Merging it creates the vX.Y.Z tag and a DRAFT release, and
+# the tag starts release.yml, which builds the DMG and adds it to that draft. A person still
+# decides when to release (by merging) and when to publish (the draft). See docs/releasing.md.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # Tags and PRs made with the built-in GITHUB_TOKEN start no other workflow, so neither
+      # release.yml nor the checks on the release PR would run. This needs a personal access
+      # token stored as a secret; without it the job does nothing instead of failing.
+      HAS_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN != '' }}
+    steps:
+      - name: Open or update the release PR, and tag when it is merged
+        if: env.HAS_TOKEN == 'true'
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}

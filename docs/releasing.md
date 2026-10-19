@@ -1,31 +1,51 @@
 # Releasing
 
-A release is a tag. Pushing `v1.0.0` runs `.github/workflows/release.yml`, which lints and
-tests, builds a universal2 app, wraps it in a DMG and creates a **draft** GitHub release.
-Review the draft, then publish it.
+Releases are driven by Conventional Commit titles. `.github/workflows/release-please.yml`
+keeps one "release" pull request open on `main`; it bumps `__version__` and adds the commits
+to `CHANGELOG.md`. Merging that PR creates the `vX.Y.Z` tag and a **draft** GitHub release.
+The tag starts `.github/workflows/release.yml`, which lints and tests, builds a universal2
+app, wraps it in a DMG and adds it to the draft. Review the draft, then publish it.
 
 ## Cutting a release
 
 1. Work through [`manual-tests.md`](manual-tests.md); the real-button latency, hotplug and
    Wispr-compatibility gates (specs/spec.md section 8) block a release and are not checked
-   by CI. Nothing mechanical stops a tag being pushed before then.
-2. Set `__version__` in `src/muteme_flow/__init__.py` to the release version.
-3. In `CHANGELOG.md`, rename `[Unreleased]` to the version and date, and start a new
-   `[Unreleased]` above it. The workflow's generated notes list the commits; the changelog is
-   the human summary, so keep both.
-4. Merge, then push the tag (`git tag v1.0.0 && git push origin v1.0.0`).
-5. Review the draft release the workflow creates, then publish it.
+   by CI. Nothing mechanical stops the release PR being merged before then.
+2. Open the "release" pull request that `release-please` maintains, check the version it
+   chose and its changelog entry (edit the PR if they need changing), and merge it. `feat:`
+   commits raise the minor version and `fix:` commits the patch version. A `!` after the
+   type, or a `BREAKING CHANGE:` footer, raises the minor version while the version is
+   below 1.0.0 and the major version after that. To force a version, add a commit with a
+   `Release-As: 1.0.0` footer.
+3. Wait for the Release workflow to finish, then review the draft release it filled in
+   (the files, the install notes and the SHA-256) and publish it.
    The release carries the DMG twice, as `MuteMe-Flow-<version>.dmg` and as `MuteMe-Flow.dmg`:
    the README links to `releases/latest/download/MuteMe-Flow.dmg`, which GitHub resolves to
    the newest published release that is not a draft or prerelease.
 
 Details:
 
-- The tag must match the version in `src/muteme_flow/__init__.py` (`v1.0.0` needs
-  `__version__ = "1.0.0"`), or the workflow stops before building. A suffix such as
-  `v1.0.0-rc1` is accepted and marks the release as a prerelease.
-- The workflow only ever creates a draft. If you re-run it for the same tag, delete the old
-  draft first, because GitHub allows several drafts for one tag.
+- The tag must match the version in `src/muteme_flow/__init__.py`, or the workflow stops
+  before building. The release PR keeps them in step (`__version__` carries an
+  `x-release-please-version` marker so it can be edited).
+- Pushing a tag by hand still works (`git tag v0.2.0 && git push origin v0.2.0`, after
+  setting `__version__`): the workflow then creates the draft itself. A suffix such as
+  `v0.2.0-rc1` is accepted and marks the release as a prerelease.
+- If you re-run the workflow for the same tag it replaces the files, and does not add the
+  install notes twice. A hand-pushed tag that already has a draft needs the old draft
+  deleted first, because GitHub allows several drafts for one tag.
+- `release-please` does not use an `[Unreleased]` heading; it adds each version above the
+  previous one. The 0.1.0 entry was written by hand.
+
+### The release-please token
+
+Tags and pull requests created with the built-in `GITHUB_TOKEN` start no other workflow, so
+the release PR would get no checks and its tag would not start `release.yml`. Create a
+fine-grained personal access token limited to this repository, with **Contents** and
+**Pull requests** set to read and write, and store it as the repository secret
+`RELEASE_PLEASE_TOKEN` (Settings > Secrets and variables > Actions). Until it exists the
+`Release PR` workflow does nothing, and releases are cut with a hand-pushed tag. Set an
+expiry on the token and renew it before then.
 
 ## Building locally
 

@@ -170,8 +170,21 @@ jobs:
 
       - name: Draft the release
         run: |
-          # If a draft for this tag already exists from an earlier run, delete it first
-          # (docs/releasing.md); GitHub does not stop a second draft being created.
+          # A tag made by the release PR (release-please) already has a draft, holding the
+          # changelog: put the install notes above it and add the files. Re-running must not
+          # add the notes twice, hence the SHA-256 check.
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release view "$GITHUB_REF_NAME" --json body --jq .body > existing.md
+            if ! grep -q "SHA-256:" existing.md; then
+              { cat notes.md; echo; cat existing.md; } > body.md
+              gh release edit "$GITHUB_REF_NAME" --notes-file body.md
+            fi
+            gh release upload "$GITHUB_REF_NAME" MuteMe-Flow-*.dmg MuteMe-Flow.dmg --clobber
+            exit 0
+          fi
+          # Otherwise (a tag pushed by hand) create the draft. If one from an earlier run
+          # exists for another reason, delete it first (docs/releasing.md); GitHub does not
+          # stop a second draft being created.
           flags=(--draft)
           case "$GITHUB_REF_NAME" in *-*) flags+=(--prerelease) ;; esac
           gh release create "$GITHUB_REF_NAME" MuteMe-Flow-*.dmg MuteMe-Flow.dmg "${flags[@]}" \
