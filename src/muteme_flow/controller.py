@@ -36,8 +36,15 @@ class Controller:
         # main thread, so the two can be compared.
         self._now = scheduler.now
         self.latency = latency or LatencyRecorder(self._now)
+        # The UI sets this to refresh itself when anything it shows may have changed.
+        self.on_change: Callable[[], None] = lambda: None
+        self._refresh_pending = False
         self.machine = StateMachine(
-            send=self._send, set_led=led.request, scheduler=scheduler, timings=timings
+            send=self._send,
+            set_led=led.request,
+            scheduler=scheduler,
+            timings=timings,
+            on_change=self._schedule_refresh,
         )
         self._handlers: dict[DeviceEvent, Callable[[float], None]] = {
             DeviceEvent.DOWN: lambda at: self.machine.touch_down(at),
@@ -61,11 +68,32 @@ class Controller:
     def wispr_running_changed(self, running: bool) -> None:
         self.machine.wispr_running_changed(running)
 
+    def conflict_changed(self, conflict: bool) -> None:
+        self.machine.set_conflict(conflict)
+
     def wake(self) -> None:
         self.machine.wake()
 
     def shutdown(self) -> None:
         self.machine.shutdown()
+
+    def _schedule_refresh(self) -> None:
+        """Defer the UI update until after the current transition, and merge bursts.
+
+        A menu refresh is slow next to the work around a touch, and a bug in it must not
+        abort a state change, so it never runs inline.
+        """
+        if self._refresh_pending:
+            return
+        self._refresh_pending = True
+        self._post_to_main(self._refresh)
+
+    def _refresh(self) -> None:
+        self._refresh_pending = False
+        try:
+            self.on_change()
+        except Exception:
+            log.exception("error while refreshing the menu")
 
     def _handle(self, event: DeviceEvent, received_at: float) -> None:
         self.latency.input_received(received_at)

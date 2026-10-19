@@ -4,10 +4,8 @@ from collections.abc import Callable, Sequence
 from typing import Any
 
 from muteme_flow.commands import WISPR_BUNDLE_ID
-from muteme_flow.guarded import guarded
+from muteme_flow.notifications import LAUNCH_NOTIFICATION, TERMINATE_NOTIFICATION, Subscriptions
 
-LAUNCH_NOTIFICATION = "NSWorkspaceDidLaunchApplicationNotification"
-TERMINATE_NOTIFICATION = "NSWorkspaceDidTerminateApplicationNotification"
 _APPLICATION_KEY = "NSWorkspaceApplicationKey"
 
 
@@ -19,43 +17,31 @@ class WisprPresence:
         on_change: Callable[[bool], None],
         *,
         find_running: Callable[[str], Sequence[Any]],
-        notification_center: Any,
-        queue: Any,
+        subscriptions: Subscriptions,
     ) -> None:
         self._on_change = on_change
         self._find_running = find_running
-        self._center = notification_center
-        # Delivering on the main queue keeps `on_change` on the main thread.
-        self._queue = queue
-        self._observers: list[Any] = []
+        self._subscriptions = subscriptions
 
     @classmethod
     def for_current_app(cls, on_change: Callable[[bool], None]) -> "WisprPresence":
-        from AppKit import NSRunningApplication, NSWorkspace
-        from Foundation import NSOperationQueue
+        from AppKit import NSRunningApplication
 
         return cls(
             on_change,
             # A class method of NSRunningApplication, not of NSWorkspace.
             find_running=NSRunningApplication.runningApplicationsWithBundleIdentifier_,
-            notification_center=NSWorkspace.sharedWorkspace().notificationCenter(),
-            queue=NSOperationQueue.mainQueue(),
+            subscriptions=Subscriptions.for_current_app(),
         )
 
     def start(self) -> None:
         # Subscribe before the first check, so a launch in between cannot be missed.
-        for name in (LAUNCH_NOTIFICATION, TERMINATE_NOTIFICATION):
-            self._observers.append(
-                self._center.addObserverForName_object_queue_usingBlock_(
-                    name, None, self._queue, guarded(self._handle, "Wispr presence handler")
-                )
-            )
+        self._subscriptions.subscribe(LAUNCH_NOTIFICATION, self._handle)
+        self._subscriptions.subscribe(TERMINATE_NOTIFICATION, self._handle)
         self._on_change(self._is_running())
 
     def stop(self) -> None:
-        for observer in self._observers:
-            self._center.removeObserver_(observer)
-        self._observers.clear()
+        self._subscriptions.unsubscribe_all()
 
     def _is_running(self) -> bool:
         # Asked afresh rather than inferred from the notification: a second copy of the

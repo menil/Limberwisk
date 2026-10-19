@@ -42,6 +42,7 @@ class HidapiDevice:
     def __init__(self, hid_module: Any = None) -> None:
         self._hid = _resolve(hid_module)
         self._raw: Any = None
+        self.device_id: devices.DeviceId | None = None
 
     def open(self, vid: int, pid: int) -> None:
         raw = self._hid.device()
@@ -54,6 +55,7 @@ class HidapiDevice:
                 raw.close()
             raise DeviceError(f"cannot open {vid:#06x}:{pid:#06x}: {error}") from error
         self._raw = raw
+        self.device_id = devices.lookup(vid, pid)
 
     def read(self, size: int, timeout_ms: int) -> list[int]:
         raw = self._require_open()

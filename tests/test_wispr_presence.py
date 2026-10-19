@@ -1,6 +1,7 @@
 from support.fake_appkit import FakeApp, FakeNotification, FakeNotificationCenter
 
-from muteme_flow.dispatcher import WISPR_BUNDLE_ID
+from muteme_flow.commands import WISPR_BUNDLE_ID
+from muteme_flow.notifications import Subscriptions
 from muteme_flow.wispr_presence import LAUNCH_NOTIFICATION, TERMINATE_NOTIFICATION, WisprPresence
 
 MAIN_QUEUE = object()
@@ -15,8 +16,7 @@ class Harness:
         self.presence = WisprPresence(
             self.changes.append,
             find_running=self._find_running,
-            notification_center=self.center,
-            queue=MAIN_QUEUE,
+            subscriptions=Subscriptions(self.center, MAIN_QUEUE),
         )
 
     def _find_running(self, bundle_id):
@@ -71,7 +71,7 @@ def test_observers_are_registered_before_the_first_check():
     original = harness._find_running
 
     def spying_find(bundle_id):
-        registered_at_check.append(len(harness.center.handlers))
+        registered_at_check.append(sum(len(h) for h in harness.center.handlers.values()))
         return original(bundle_id)
 
     harness.presence._find_running = spying_find

@@ -25,6 +25,7 @@ class Rig:
             post_to_main=self.posted.append,
         )
         self.controller.wispr_running_changed(True)
+        self.run_posted()  # the machine's startup refresh is posted; start from a clean queue
 
     # the dispatcher interface
     def dispatch(self, command, on_complete):
@@ -166,3 +167,42 @@ def test_shutdown_goes_straight_to_the_machine(rig):
     rig.controller.shutdown()
     assert [command for command, _ in rig.dispatched] == [Command.START, Command.STOP]
     assert rig.led.take_pending() is Color.RED
+
+
+def test_a_conflict_report_reaches_the_machine(rig):
+    rig.controller.conflict_changed(True)
+    assert rig.machine.conflict
+
+
+def test_the_ui_is_refreshed_after_the_touch_is_handled_not_during_it(rig):
+    seen = []
+    rig.controller.on_change = lambda: seen.append(rig.dispatched[:])
+    rig.event(DeviceEvent.DOWN)
+    # Refreshing before the dispatch would have seen no command yet.
+    assert seen
+    assert all(len(commands) == 1 for commands in seen)
+
+
+def test_a_burst_of_changes_causes_one_refresh(rig):
+    refreshes = []
+    rig.controller.on_change = lambda: refreshes.append(1)
+    rig.run_posted()
+    refreshes.clear()
+    rig.controller.conflict_changed(True)
+    rig.controller.conflict_changed(False)
+    rig.controller.conflict_changed(True)
+    assert refreshes == []  # nothing inline
+    rig.run_posted()
+    assert refreshes == [1]
+
+
+def test_a_failing_refresh_is_logged_and_does_not_disturb_the_state_machine(rig, caplog):
+    def broken():
+        raise RuntimeError("menu bug")
+
+    rig.controller.on_change = broken
+    with caplog.at_level(logging.ERROR):
+        rig.event(DeviceEvent.DOWN)
+    assert "menu bug" in caplog.text
+    assert rig.machine.state is State.PENDING_TOUCH
+    assert [command for command, _ in rig.dispatched] == [Command.START]

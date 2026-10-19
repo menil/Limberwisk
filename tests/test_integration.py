@@ -234,6 +234,49 @@ def test_runtime_starts_and_stops_every_component_in_order():
     assert not s.worker.running
 
 
+def test_runtime_stop_is_repeatable():
+    s = System()
+    order = []
+    runtime = s.make_runtime(order=order)
+    runtime.start()
+    runtime.stop()
+    runtime.stop()
+    assert order.count("stop power") == 1
+    assert not s.worker.running
+
+
+def test_the_worker_is_stopped_even_if_an_earlier_stop_step_fails():
+    s = System()
+
+    class Broken(Recorder):
+        def stop(self):
+            raise RuntimeError("cannot unsubscribe")
+
+    runtime = Runtime(
+        controller=s.controller,
+        worker=s.worker,
+        presence=Recorder("presence", []),
+        make_power=lambda on_sleep, on_wake: Broken("power", []),
+        pump=lambda seconds: None,
+    )
+    runtime.start()
+    with pytest.raises(RuntimeError):
+        runtime.stop()
+    assert not s.worker.running  # the final LED write still had its chance
+    assert s.machine.wispr_running  # and the machine was shut down first
+
+
+def test_the_connected_model_is_available_for_diagnostics():
+    s = System()
+    runtime = s.make_runtime()
+    assert runtime.connected_device_id is None
+    runtime.start()
+    assert s.main.run_until(lambda: s.machine.device_connected)
+    s.device.device_id = "the model"
+    assert runtime.connected_device_id == "the model"
+    runtime.stop()
+
+
 def test_runtime_stop_stops_a_recording_and_leaves_the_led_red():
     s = System()
     pumped = []

@@ -499,3 +499,99 @@ def test_shutdown_twice_is_harmless(rig):
     rig.machine.shutdown()
     rig.machine.shutdown()
     assert rig.sent == [Command.START, Command.STOP]
+
+
+# --- official-app conflict, change notifications, live settings ---------------------------
+
+
+def test_a_conflict_turns_the_led_yellow_even_while_recording(rig):
+    rig.tap()
+    assert rig.led is Color.GREEN
+    rig.machine.set_conflict(True)
+    assert rig.machine.conflict
+    assert rig.led is Color.YELLOW
+
+
+def test_the_led_recovers_when_the_conflict_ends(rig):
+    rig.machine.set_conflict(True)
+    rig.machine.set_conflict(False)
+    assert rig.led is Color.RED
+
+
+def test_a_conflict_outranks_the_wispr_away_blue():
+    rig = Rig(wispr_running=False)
+    rig.machine.set_conflict(True)
+    assert rig.led is Color.YELLOW
+
+
+def test_a_conflict_does_not_stop_a_recording(rig):
+    rig.tap()
+    rig.machine.set_conflict(True)
+    assert rig.machine.state is State.RECORDING_LOCKED
+    assert rig.sent == [Command.START]
+
+
+def test_the_recording_property_tracks_the_state(rig):
+    assert not rig.machine.recording
+    rig.tap()
+    assert rig.machine.recording
+    rig.machine.touch_down()
+    assert not rig.machine.recording
+
+
+def test_a_new_hold_threshold_applies_to_the_next_gesture(rig):
+    rig.machine.timings = Timings(hold_s=0.5)
+    rig.machine.touch_down()
+    rig.scheduler.advance(0.4)
+    assert rig.machine.state is State.PENDING_TOUCH  # not yet a hold at the new threshold
+    rig.scheduler.advance(0.2)
+    assert rig.machine.state is State.RECORDING_MOMENTARY
+
+
+def test_the_change_hook_fires_for_what_the_menu_shows():
+    changes = []
+    scheduler = FakeScheduler()
+    machine = StateMachine(
+        send=lambda command, done: None,
+        set_led=lambda color: None,
+        scheduler=scheduler,
+        on_change=lambda: changes.append(1),
+    )
+    for change in (
+        lambda: machine.wispr_running_changed(True),
+        lambda: machine.device_attached(),
+        lambda: machine.set_conflict(True),
+        lambda: machine.device_open_failed(),
+        lambda: machine.device_detached(),
+    ):
+        changes.clear()
+        change()
+        assert len(changes) == 1, change
+
+
+def test_an_unchanged_value_does_not_notify():
+    changes = []
+    machine = StateMachine(
+        send=lambda command, done: None,
+        set_led=lambda color: None,
+        scheduler=FakeScheduler(),
+        on_change=lambda: changes.append(1),
+    )
+    machine.set_conflict(True)
+    changes.clear()
+    machine.set_conflict(True)
+    assert changes == []
+
+
+def test_the_led_stays_yellow_when_the_conflict_ends_but_another_problem_remains(rig):
+    rig.machine.device_open_failed()
+    rig.machine.set_conflict(True)
+    rig.machine.set_conflict(False)
+    assert rig.led is Color.YELLOW
+
+
+def test_the_conflict_flag_is_ignored_after_shutdown(rig):
+    rig.machine.shutdown()
+    rig.machine.set_conflict(True)
+    assert not rig.machine.conflict
+    assert rig.led is Color.RED

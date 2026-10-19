@@ -5,7 +5,9 @@ from collections.abc import Callable
 from typing import Protocol
 
 from muteme_flow.controller import Controller
+from muteme_flow.devices import DeviceId
 from muteme_flow.hid_worker import HidWorker
+from muteme_flow.state_machine import Timings
 
 # Longest wait at quit for the final stop command to be handed to the system.
 SHUTDOWN_DRAIN_S = 0.5
@@ -49,9 +51,15 @@ class Runtime:
         # Built last so it can be handed this runtime's own sleep/wake methods.
         self._power = make_power(self.sleep, self.wake)
         self._pump = pump
+        self._stopped = False
+
+    @property
+    def connected_device_id(self) -> DeviceId | None:
+        """Which known model is plugged in, for diagnostics."""
+        return getattr(self._worker.connected_device, "device_id", None)
 
     @classmethod
-    def create_default(cls) -> "Runtime":
+    def create_default(cls, timings: Timings | None = None) -> "Runtime":
         """Build the real macOS runtime. Call on the main thread, before the run loop."""
         from muteme_flow.dispatcher import NSWorkspaceDispatcher
         from muteme_flow.hidapi_device import open_first_known, preload_hidapi
@@ -69,6 +77,7 @@ class Runtime:
             led=led,
             scheduler=NSTimerScheduler.for_current_app(),
             post_to_main=post_to_main,
+            timings=timings,
         )
         return cls(
             controller=controller,
@@ -83,12 +92,19 @@ class Runtime:
         self._worker.start()
 
     def stop(self) -> None:
-        self._power.stop()
-        self._presence.stop()
-        # Queue the final stop and red LED first; the worker writes the LED as it exits.
+        """Safe to call more than once: quit paths (menu, signal, terminate) can overlap."""
+        if self._stopped:
+            return
+        self._stopped = True
+        # Stop Wispr and queue the red LED first: nothing else matters if it does not happen.
         self.controller.shutdown()
-        self._drain()
-        self._worker.stop()
+        try:
+            self._power.stop()
+            self._presence.stop()
+            self._drain()
+        finally:
+            # The worker writes the final LED colour as it exits, so it must always run.
+            self._worker.stop()
 
     def sleep(self) -> None:
         self._worker.pause()
