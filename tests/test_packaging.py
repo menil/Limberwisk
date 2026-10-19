@@ -7,6 +7,7 @@ one documented.
 
 import ast
 import fnmatch
+import json
 import plistlib
 import re
 import shutil
@@ -246,8 +247,11 @@ def test_every_script_the_workflow_runs_exists_and_is_executable(workflow):
 
 
 def test_every_secret_the_workflow_uses_is_documented():
-    text = (ROOT / ".github" / "workflows" / "release.yml").read_text()
-    used = set(re.findall(r"secrets\.([A-Z_]+)", text))
+    # The PR-review workflow's keys are documented in the README, not in the release guide.
+    names = ("release.yml", "release-please.yml")
+    text = " ".join((ROOT / ".github" / "workflows" / name).read_text() for name in names)
+    # GITHUB_TOKEN is created by GitHub for every run; there is nothing to set up or document.
+    used = set(re.findall(r"secrets\.([A-Z_]+)", text)) - {"GITHUB_TOKEN"}
     documented = (ROOT / "docs" / "releasing.md").read_text()
     missing = {name for name in used if name not in documented}
     assert not missing, f"undocumented secrets: {sorted(missing)}"
@@ -289,3 +293,43 @@ def test_the_readme_download_link_names_a_file_every_release_uploads(workflow):
     (draft,) = [s for s in steps(workflow, "release") if s.get("name") == "Draft the release"]
     assert f"release/{name}" in stage["run"]
     assert name in draft["run"]
+
+
+@pytest.fixture
+def release_please():
+    return yaml.safe_load((ROOT / ".github" / "workflows" / "release-please.yml").read_text())
+
+
+def test_the_release_pr_config_edits_the_version_the_code_really_has():
+    config = json.loads((ROOT / "release-please-config.json").read_text())
+    manifest = json.loads((ROOT / ".release-please-manifest.json").read_text())
+    package = config["packages"]["."]
+    assert not package["include-component-in-tag"]  # tags are v0.1.0, which release.yml expects
+    # The tag exists only after the release PR is merged, and the draft must be filled by
+    # release.yml, so the release is a draft with its tag created up front.
+    assert package["draft"] is True
+    assert package["force-tag-creation"] is True
+    (extra,) = package["extra-files"]
+    source = (ROOT / extra["path"]).read_text()
+    assert re.search(r'^__version__ = "([^"]+)"  # x-release-please-version$', source, re.M)
+    assert manifest["."] == __version__
+
+
+def test_the_release_pr_workflow_pins_its_action_and_needs_a_token(release_please):
+    (job,) = release_please["jobs"].values()
+    (step,) = job["steps"]
+    assert re.search(r"@[0-9a-f]{40}$", step["uses"]), step["uses"]
+    # Without the token, tags would start no workflow; the step must be skipped, not fail.
+    assert "HAS_TOKEN" in step["if"]
+    assert step["with"]["token"] == "${{ secrets.RELEASE_PLEASE_TOKEN }}"
+    # PyYAML reads the bare key `on` as the boolean True, so `["on"]` would be a KeyError.
+    assert release_please[True]["push"]["branches"] == ["main"]
+
+
+def test_the_release_job_fills_a_draft_that_release_please_already_made(workflow):
+    (draft,) = [s for s in steps(workflow, "release") if s.get("name") == "Draft the release"]
+    run = draft["run"]
+    assert "gh release view" in run  # is there a draft already?
+    assert "gh release upload" in run
+    assert "--clobber" in run  # a re-run replaces the files
+    assert "gh release create" in run  # a hand-pushed tag still works

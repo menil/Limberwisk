@@ -3,8 +3,6 @@
 All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
-
 ## [0.1.0] - 2026-10-19
 
 First release, unsigned and not notarized. See `docs/manual-tests.md` for what still needs
