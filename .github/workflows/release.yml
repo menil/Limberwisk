@@ -1,17 +1,30 @@
 name: Release
 
-# Pushing a tag such as v1.0.0 builds the app and attaches a DMG to a DRAFT release, so a
-# person reviews it before anything is published. See docs/releasing.md.
+# Builds the app for a tag such as v1.0.0 and attaches a DMG to a DRAFT release, so a person
+# reviews it before anything is published. It runs when such a tag is pushed by hand, and
+# when release-please.yml calls it after merging a release PR: tags made with the built-in
+# token start no workflow of their own. See docs/releasing.md.
 on:
   push:
     tags: ["v*"]
+  workflow_call:
+    inputs:
+      tag:
+        description: The tag to build, for example v1.0.0.
+        required: true
+        type: string
 
 # Read-only by default. Only the final job, which runs none of the project's code, may write.
 permissions:
   contents: read
 
+env:
+  # Pushed by hand, the tag is the ref. Called from another workflow, the ref is main, so
+  # the tag comes in as an input.
+  TAG: ${{ inputs.tag || github.ref_name }}
+
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ inputs.tag || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -34,6 +47,7 @@ jobs:
       - name: Check out
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
+          ref: refs/tags/${{ env.TAG }}
           persist-credentials: false
 
       - name: Install a universal2 Python
@@ -49,9 +63,9 @@ jobs:
       - name: Check the tag matches the code's version
         run: |
           version="$(.venv/bin/python -c 'import muteme_flow; print(muteme_flow.__version__)')"
-          base="${GITHUB_REF_NAME#v}"; base="${base%%-*}"  # v1.0.0-rc1 releases 1.0.0
+          base="${TAG#v}"; base="${base%%-*}"  # v1.0.0-rc1 releases 1.0.0
           if [ "$base" != "$version" ]; then
-            echo "Tag $GITHUB_REF_NAME does not match the code's version $version." >&2
+            echo "Tag $TAG does not match the code's version $version." >&2
             exit 1
           fi
 
@@ -173,19 +187,19 @@ jobs:
           # A tag made by the release PR (release-please) already has a draft, holding the
           # changelog: put the install notes above it and add the files. Re-running must not
           # add the notes twice, hence the SHA-256 check.
-          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
-            gh release view "$GITHUB_REF_NAME" --json body --jq .body > existing.md
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release view "$TAG" --json body --jq .body > existing.md
             if ! grep -q "SHA-256:" existing.md; then
               { cat notes.md; echo; cat existing.md; } > body.md
-              gh release edit "$GITHUB_REF_NAME" --notes-file body.md
+              gh release edit "$TAG" --notes-file body.md
             fi
-            gh release upload "$GITHUB_REF_NAME" MuteMe-Flow-*.dmg MuteMe-Flow.dmg --clobber
+            gh release upload "$TAG" MuteMe-Flow-*.dmg MuteMe-Flow.dmg --clobber
             exit 0
           fi
           # Otherwise (a tag pushed by hand) create the draft. If one from an earlier run
           # exists for another reason, delete it first (docs/releasing.md); GitHub does not
           # stop a second draft being created.
           flags=(--draft)
-          case "$GITHUB_REF_NAME" in *-*) flags+=(--prerelease) ;; esac
-          gh release create "$GITHUB_REF_NAME" MuteMe-Flow-*.dmg MuteMe-Flow.dmg "${flags[@]}" \
-            --title "MuteMe Flow $GITHUB_REF_NAME" --notes-file notes.md --generate-notes
+          case "$TAG" in *-*) flags+=(--prerelease) ;; esac
+          gh release create "$TAG" MuteMe-Flow-*.dmg MuteMe-Flow.dmg "${flags[@]}" \
+            --title "MuteMe Flow $TAG" --notes-file notes.md --generate-notes

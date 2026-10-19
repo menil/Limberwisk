@@ -2,9 +2,10 @@
 
 Releases are driven by Conventional Commit titles. `.github/workflows/release-please.yml`
 keeps one "release" pull request open on `main`; it bumps `__version__` and adds the commits
-to `CHANGELOG.md`. Merging that PR creates the `vX.Y.Z` tag and a **draft** GitHub release.
-The tag starts `.github/workflows/release.yml`, which lints and tests, builds a universal2
-app, wraps it in a DMG and adds it to the draft. Review the draft, then publish it.
+to `CHANGELOG.md`. Merging that PR creates the `vX.Y.Z` tag and a **draft** GitHub release,
+and the same workflow then calls `.github/workflows/release.yml`, which lints and tests,
+builds a universal2 app, wraps it in a DMG and adds it to the draft. Review the draft, then
+publish it.
 
 ## Cutting a release
 
@@ -37,15 +38,16 @@ Details:
 - `release-please` does not use an `[Unreleased]` heading; it adds each version above the
   previous one. The 0.1.0 entry was written by hand.
 
-### The release-please token
+### Repository setting
 
-Tags and pull requests created with the built-in `GITHUB_TOKEN` start no other workflow, so
-the release PR would get no checks and its tag would not start `release.yml`. Create a
-fine-grained personal access token limited to this repository, with **Contents** and
-**Pull requests** set to read and write, and store it as the repository secret
-`RELEASE_PLEASE_TOKEN` (Settings > Secrets and variables > Actions). Until it exists the
-`Release PR` workflow does nothing, and releases are cut with a hand-pushed tag. Set an
-expiry on the token and renew it before then.
+`release-please` works with the built-in `GITHUB_TOKEN`, but GitHub only lets Actions open
+pull requests if **Settings > Actions > General > Workflow permissions > Allow GitHub Actions
+to create and approve pull requests** is ticked. Tags made with that token start no
+workflow, so `release-please.yml` calls `release.yml` itself (with the tag as an input) when
+it has made a release. The same token means the release PR gets no CI checks; it only
+changes the version and the changelog, and `Validate` runs on `main` after the merge. If
+you ever make a check required on pull requests, give `release-please` a personal access
+token instead (the action's `token:` input), so its PR runs the checks too.
 
 ## Building locally
 
