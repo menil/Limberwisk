@@ -268,3 +268,10 @@ def test_the_release_job_finds_its_files_at_the_root_of_the_artifact(workflow):
     assert "dist/" not in release_runs
     assert "MuteMe-Flow-*.dmg" in release_runs
     assert "notes.md" in release_runs
+
+
+def test_unsigned_release_notes_explain_open_anyway_for_macos_15(workflow):
+    # Right-click > Open is unavailable on macOS 15; the notes must direct users to System
+    # Settings instead (they once told everyone to right-click).
+    stage = steps(workflow)[step_index(workflow, "Stage the release files")]
+    assert "Open Anyway" in stage["run"]

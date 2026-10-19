@@ -119,8 +119,12 @@ jobs:
             echo "Signed and notarized: open the DMG and drag the app to Applications." > release/notes.md
           else
             cat > release/notes.md <<'NOTES'
-          **This build is not notarized.** After dragging MuteMe Flow to Applications,
-          right-click the app and choose Open the first time (macOS will otherwise refuse it).
+          **This build is not notarized**, so macOS refuses it the first time. After dragging
+          MuteMe Flow to Applications:
+
+          - **macOS 15 and later:** try to open it, then go to System Settings > Privacy &
+            Security and choose **Open Anyway**.
+          - **macOS 13 and 14:** right-click the app and choose Open.
           NOTES
           fi
           {
