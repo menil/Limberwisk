@@ -1,0 +1,68 @@
+# OS files
+.DS_Store
+Thumbs.db
+db.lock
+*.tmp
+*.bak
+
+# IDEs
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Nix
+.direnv/
+result
+result-*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+env/
+venv/
+ENV/
+
+# JavaScript / TypeScript
+node_modules/
+dist/
+build/
+out/
+coverage/
+*.tsbuildinfo
+.npm/
+.eslintcache
+.turbo/
+.next/
+.nuxt/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Temp files
+pr.diff
+
+# Beads (issue tracking)
+.beads/
+
+# Claude Code local overrides (not shared; .claude/settings.json IS tracked)
+.claude/settings.local.json
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
+.beads/proxieddb/
+
+# Beads / Dolt files (added by bd init)
+*.gate.lock*
+
