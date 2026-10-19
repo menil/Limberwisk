@@ -39,9 +39,13 @@ one from source for both architectures.
 
 ## Signed and notarized releases
 
-Without a Developer ID certificate the DMG is only ad-hoc signed: it works, but macOS asks
-the user to right-click the app and choose Open the first time. To ship a normal install
-experience, add these as secrets of a GitHub **environment** named `release`
+Without a Developer ID certificate the DMG is only ad-hoc signed: it works, but macOS
+refuses it the first time, and the user has to override that:
+
+- macOS 15 and later: choose **Open Anyway** in System Settings > Privacy & Security.
+- macOS 13 and 14: right-click the app and choose Open.
+
+To ship a normal install experience, add these as secrets of a GitHub **environment** named `release`
 (Settings > Environments), and give that environment required reviewers and a
 deployment-tag rule so that pushing a tag alone cannot reach them:
 
