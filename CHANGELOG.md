@@ -5,8 +5,10 @@ All notable changes are recorded here. The format follows
 
 ## [Unreleased]
 
-First version, not yet released. See `docs/manual-tests.md` for what still needs checking on
-real hardware before 1.0.0.
+## [0.1.0] - 2026-10-19
+
+First release, unsigned and not notarized. See `docs/manual-tests.md` for what still needs
+checking on real hardware before 1.0.0.
 
 ### Changed
 
