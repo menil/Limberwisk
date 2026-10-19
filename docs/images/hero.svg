@@ -1,0 +1,188 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 960 450" width="960" height="450" role="img" aria-labelledby="title desc">
+  <title id="title">Tap the MuteMe button to dictate</title>
+  <desc id="desc">A stainless-steel MuteMe button with a green glowing band sits beside a laptop. The laptop shows a dictation window with a waveform and text appearing. Below, four buttons show what each light colour means: red is idle, green is dictating, blue means Wispr Flow is not running, and yellow means something needs attention.</desc>
+
+  <style>
+    :root {
+      --ink: #1f2328;
+      --muted: #656d76;
+      --faint: #afb8c1;
+      --panel: #ffffff;
+      --panel-edge: #d0d7de;
+      --laptop: #d8dee4;
+      --laptop-edge: #afb8c1;
+      --screen: #eef1f4;
+      --steel-1: #f5f7f9;
+      --steel-2: #c3cad1;
+      --steel-3: #e8ecef;
+      --steel-4: #9aa3ab;
+      --cable: #3a4148;
+      --desk-shadow: 0.28;
+      --green: #1a9f4b;
+      --green-tint: #dff5e7;
+      --red: #d1242f;
+      --blue: #0969da;
+      --yellow: #bf8700;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --ink: #e6edf3;
+        --muted: #8b949e;
+        --faint: #484f58;
+        --panel: #161b22;
+        --panel-edge: #30363d;
+        --laptop: #30363d;
+        --laptop-edge: #484f58;
+        --screen: #0d1117;
+        --steel-1: #dfe4e9;
+        --steel-2: #8f98a1;
+        --steel-3: #c5cbd1;
+        --steel-4: #6a737c;
+        --cable: #6e7681;
+        --desk-shadow: 0.55;
+        --green: #3fb950;
+        --green-tint: #12261a;
+        --red: #f85149;
+        --blue: #58a6ff;
+        --yellow: #d29922;
+      }
+    }
+    text { font-family: -apple-system, "Segoe UI", system-ui, Helvetica, Arial, sans-serif; }
+    .label { font-size: 17px; font-weight: 600; fill: var(--ink); }
+    .note { font-size: 14px; fill: var(--muted); }
+    .small { font-size: 15px; font-weight: 600; fill: var(--ink); }
+    .pill-text { font-size: 14px; font-weight: 600; fill: var(--green); }
+  </style>
+
+  <defs>
+    <filter id="glow" x="-60%" y="-80%" width="220%" height="260%">
+      <feGaussianBlur stdDeviation="16"/>
+    </filter>
+    <filter id="soft" x="-30%" y="-60%" width="160%" height="220%">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+    <filter id="blur2" x="-30%" y="-100%" width="160%" height="300%">
+      <feGaussianBlur stdDeviation="2"/>
+    </filter>
+
+    <linearGradient id="steel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" style="stop-color: var(--steel-1)"/>
+      <stop offset="0.42" style="stop-color: var(--steel-2)"/>
+      <stop offset="0.58" style="stop-color: var(--steel-3)"/>
+      <stop offset="1" style="stop-color: var(--steel-4)"/>
+    </linearGradient>
+    <!-- Shading for the light-diffusing band. These gradients must not use the LED colour:
+         custom properties reach an instance, not the shared definitions. -->
+    <linearGradient id="band-fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.35"/>
+      <stop offset="0.45" stop-color="#fff" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0.22"/>
+    </linearGradient>
+    <linearGradient id="band-shade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#000" stop-opacity="0.22"/>
+      <stop offset="0.22" stop-color="#fff" stop-opacity="0.32"/>
+      <stop offset="0.5" stop-color="#fff" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0.32"/>
+    </linearGradient>
+
+    <!--
+      The MuteMe Original, centred on its steel top face: a stainless-steel touch surface,
+      with the light shining through the surround below it. The LED colour comes from the
+      light custom property of whichever use element draws it.
+    -->
+    <g id="muteme">
+      <ellipse cx="0" cy="52" rx="124" ry="62" fill="var(--light)" opacity="0.5" filter="url(#glow)"/>
+      <ellipse cx="0" cy="40" rx="94" ry="48" fill="#000" opacity="var(--desk-shadow)" filter="url(#soft)"/>
+      <path d="M -88 22 C -118 22 -126 34 -140 52" fill="none" stroke="var(--cable)" stroke-width="6" stroke-linecap="round"/>
+      <path d="M -88 0 L -88 38 A 88 46 0 0 0 88 38 L 88 0 A 88 46 0 0 1 -88 0 Z" fill="var(--light)"/>
+      <path d="M -88 0 L -88 38 A 88 46 0 0 0 88 38 L 88 0 A 88 46 0 0 1 -88 0 Z" fill="url(#band-fade)"/>
+      <path d="M -88 0 L -88 38 A 88 46 0 0 0 88 38 L 88 0 A 88 46 0 0 1 -88 0 Z" fill="url(#band-shade)"/>
+      <path d="M -88 38 A 88 46 0 0 0 88 38" fill="none" stroke="#000" stroke-opacity="0.35" stroke-width="2"/>
+      <ellipse cx="0" cy="0" rx="88" ry="46" fill="url(#steel)" stroke="#000" stroke-opacity="0.35" stroke-width="1.5"/>
+      <ellipse cx="0" cy="0" rx="80" ry="41.5" fill="none" stroke="#fff" stroke-opacity="0.45" stroke-width="1.2"/>
+      <g fill="none" stroke="#fff" stroke-opacity="0.2" stroke-width="1">
+        <ellipse cx="0" cy="0" rx="26" ry="13.6"/>
+        <ellipse cx="0" cy="0" rx="48" ry="25"/>
+        <ellipse cx="0" cy="0" rx="66" ry="34.5"/>
+      </g>
+      <ellipse cx="0" cy="23" rx="58" ry="12" fill="var(--light)" opacity="0.28" filter="url(#blur2)"/>
+      <ellipse cx="-30" cy="-15" rx="36" ry="8" fill="#fff" opacity="0.6" filter="url(#blur2)" transform="rotate(-12 -30 -15)"/>
+    </g>
+  </defs>
+
+  <!-- ===== the button, lit green ===== -->
+  <g id="button">
+    <ellipse cx="190" cy="216" rx="128" ry="66" fill="none" stroke="var(--green)" stroke-width="2" stroke-dasharray="5 9" opacity="0.5"/>
+    <ellipse cx="190" cy="220" rx="150" ry="78" fill="none" stroke="var(--green)" stroke-width="2" stroke-dasharray="5 11" opacity="0.26"/>
+    <use xlink:href="#muteme" href="#muteme" x="190" y="168" style="--light: var(--green)"/>
+    <text x="190" y="328" text-anchor="middle" class="label">Tap or hold</text>
+    <text x="190" y="350" text-anchor="middle" class="note">to start and stop dictating</text>
+  </g>
+
+  <!-- ===== signal from the button to the laptop ===== -->
+  <path d="M 322 190 L 392 190" stroke="var(--faint)" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 9" fill="none"/>
+  <polygon points="394,190 380,182 380,198" fill="var(--faint)"/>
+
+  <!-- ===== the laptop ===== -->
+  <g id="laptop">
+    <rect x="420" y="66" width="440" height="252" rx="16" fill="var(--laptop)" stroke="var(--laptop-edge)" stroke-width="2"/>
+    <rect x="436" y="82" width="408" height="220" rx="7" fill="var(--screen)"/>
+    <path d="M 392 318 L 888 318 L 876 338 Q 874 342 868 342 L 412 342 Q 406 342 404 338 Z" fill="var(--laptop)" stroke="var(--laptop-edge)" stroke-width="2" stroke-linejoin="round"/>
+    <rect x="600" y="318" width="80" height="7" rx="3.5" fill="var(--laptop-edge)" opacity="0.7"/>
+
+    <!-- a generic dictation window (no real app branding) -->
+    <rect x="462" y="106" width="356" height="172" rx="11" fill="var(--panel)" stroke="var(--panel-edge)" stroke-width="1.5"/>
+    <circle cx="482" cy="124" r="4.5" fill="var(--faint)"/>
+    <circle cx="498" cy="124" r="4.5" fill="var(--faint)"/>
+    <circle cx="514" cy="124" r="4.5" fill="var(--faint)"/>
+
+    <rect x="482" y="144" width="124" height="28" rx="14" fill="var(--green-tint)"/>
+    <circle cx="499" cy="158" r="5" fill="var(--green)"/>
+    <text x="512" y="163" class="pill-text">Dictating</text>
+
+    <g fill="var(--green)">
+      <rect x="640" y="150" width="6" height="16" rx="3"/>
+      <rect x="654" y="140" width="6" height="36" rx="3"/>
+      <rect x="668" y="132" width="6" height="52" rx="3"/>
+      <rect x="682" y="146" width="6" height="24" rx="3"/>
+      <rect x="696" y="136" width="6" height="44" rx="3"/>
+      <rect x="710" y="145" width="6" height="26" rx="3"/>
+      <rect x="724" y="152" width="6" height="12" rx="3"/>
+      <rect x="738" y="142" width="6" height="32" rx="3"/>
+      <rect x="752" y="152" width="6" height="12" rx="3"/>
+    </g>
+
+    <g fill="var(--faint)">
+      <rect x="482" y="196" width="310" height="10" rx="5"/>
+      <rect x="482" y="217" width="262" height="10" rx="5"/>
+      <rect x="482" y="238" width="176" height="10" rx="5"/>
+    </g>
+    <rect x="668" y="234" width="3" height="18" rx="1.5" fill="var(--green)"/>
+
+    <text x="640" y="372" text-anchor="middle" class="label">Words appear wherever your cursor is</text>
+  </g>
+
+  <!-- ===== what the light means: the same button, in each colour ===== -->
+  <g id="legend">
+    <line x1="60" y1="394" x2="900" y2="394" stroke="var(--panel-edge)" stroke-width="1.5"/>
+    <g transform="translate(72 415) scale(0.27)">
+      <use xlink:href="#muteme" href="#muteme" style="--light: var(--red)"/>
+    </g>
+    <text x="118" y="425" class="small">Idle</text>
+
+    <g transform="translate(236 415) scale(0.27)">
+      <use xlink:href="#muteme" href="#muteme" style="--light: var(--green)"/>
+    </g>
+    <text x="282" y="425" class="small">Dictating</text>
+
+    <g transform="translate(430 415) scale(0.27)">
+      <use xlink:href="#muteme" href="#muteme" style="--light: var(--blue)"/>
+    </g>
+    <text x="476" y="425" class="small">Wispr Flow not running</text>
+
+    <g transform="translate(702 415) scale(0.27)">
+      <use xlink:href="#muteme" href="#muteme" style="--light: var(--yellow)"/>
+    </g>
+    <text x="748" y="425" class="small">Needs attention</text>
+  </g>
+</svg>

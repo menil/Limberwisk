@@ -246,10 +246,10 @@ The app runs with `LSUIElement = True` (no Dock icon), presenting a native macOS
 
 | Requirement | Target | Release gate | Verification Method |
 | :--- | :--- | :--- | :--- |
-| **Response Latency** | Touch to URL dispatch < 25ms | **Blocks release** if p95 > 50ms; between 25 and 50ms is accepted and tracked | High-resolution timestamps from the `0x04` report to the `NSWorkspace.openURLs` call, including the thread hop in section 4.6. Dispatch uses `NSWorkspace`, not an `open` subprocess. |
-| **Memory Footprint** | < 45 MB RAM | Informational, never blocks a release; revisit the target if Python + PyObjC exceeds it | Activity Monitor audit of the standalone bundle |
-| **CPU Utilization** | < 0.2% CPU when idle | Informational, never blocks a release | Blocking `read(timeout)` on a dedicated thread; the device emits ~2 reports/s idle and ~70/s while touched. While no device is plugged in the app polls twice a second; enumerating only the known vendor IDs measured 0.19% of one core, against 1.6% for listing every HID device |
-| **Hotplug Support** | Reconnection < 1.5s after cable replug | **Blocks release** if reconnection takes > 3s or never recovers | Heartbeat watchdog plus automated USB disconnect/reconnect tests |
+| **Response Latency** | Touch to URL dispatch < 25ms | **Blocks release** if p95 > 50ms; between 25 and 50ms is accepted and tracked | High-resolution timestamps from the `0x04` report to the `NSWorkspace.openURLs` call, including the thread hop in section 4.6. Dispatch uses `NSWorkspace`, not an `open` subprocess. Measured: see section 10.1 (software path p95 2.1 ms). |
+| **Memory Footprint** | < 50 MB footprint (revised from 45 MB: measured 44-48 MB, see section 10.1) | Informational, never blocks a release | `scripts/measure_idle.py` on the packaged app (footprint is what Activity Monitor shows as Memory; resident size also counts shared system frameworks) |
+| **CPU Utilization** | < 0.2% CPU when idle | Informational, never blocks a release | Blocking `read(timeout)` on a dedicated thread; the device emits ~2 reports/s idle and ~70/s while touched. While no device is plugged in the app polls twice a second; enumerating only the known vendor IDs measured 0.19% of one core, against 1.6% for listing every HID device. Measured 0.12-0.13% (see section 10.1). |
+| **Hotplug Support** | Reconnection < 1.5s after cable replug | **Blocks release** if reconnection takes > 3s or never recovers | Heartbeat watchdog and the fake-device reconnect tests, then `scripts/measure_hotplug.py` (needs a person to unplug and replug the button; all 20 cycles must be measured) |
 | **Wispr compatibility** | `start`/`stop-hands-free` semantics in section 4.2 hold | **Blocks release** | Manual regression against the installed Wispr Flow before each release, since the URL scheme is undocumented |
 
 ### 8.1 Test Strategy
@@ -289,6 +289,20 @@ The app runs with `LSUIElement = True` (no Dock icon), presenting a native macOS
 * **`hidapi` 0.15.0 publishes only an arm64 wheel for cp314 on macOS**, so a bundle built from PyPI wheels is not universal: `hid.so` is arm64-only and would fail to import on an Intel Mac. Building `hidapi` from its sdist with `ARCHFLAGS="-arch arm64 -arch x86_64"` and a clean `PATH` (Apple's clang) yields a `macosx_10_15_universal2` wheel; the rebuilt bundle's `hid.so` verified universal with `lipo`. The release pipeline must build this wheel in CI (milestone 5). Fallback if that proves fragile: ship arm64-only.
 * The Intel slice was verified with `lipo` only; it has never been executed.
 * **Build gotchas:** `setup_requires=["py2app"]` hung while resolving; the strip step hung when a Nix-provided `strip` was first on `PATH`. The build disables stripping (`"strip": False`) and uses a clean `PATH`. py2app must also be run from a directory without `pyproject.toml` (setuptools otherwise reads its dependencies as `install_requires`, which py2app rejects), so `scripts/build_app.sh` runs it from `packaging/`.
-* The real app's bundle is 55 MB on disk (build tooling and unused standard-library parts excluded) and its DMG about 30 MB. Memory use is measured in milestone 6.
+* The real app's bundle is 55 MB on disk (build tooling and unused standard-library parts excluded) and its DMG about 30 MB. Idle memory and CPU are measured in the table at the end of this section.
 
 **`NSWorkspace` dispatch spike (question 1, section 4.2 hard gate): not yet run.** The harness is `spikes/nsworkspace_dispatch/run.py`. It starts real dictation and needs an operator to answer prompts and to switch applications once for its focus self-test, so it is deferred to the manual test pass. Its latency column measures the time until LaunchServices confirms the hand-off, which is a lower bound for the dispatch leg of the 25ms goal, not the whole goal. Until its results are recorded here, the gate in section 4.2 is **unsatisfied**.
+
+**Measurements (milestone 6), run 2026-10-19 on the development Mac (macOS 26, Apple Silicon, MuteMe Original attached):**
+
+| What | Result | Gate or goal |
+| :--- | :--- | :--- |
+| Touch-to-dispatch, software path (`scripts/measure_latency.py`: 100 synthetic taps and 10 holds through the real HID thread, controller, state machine, main run loop and `NSWorkspace`; every command sent as the idempotent `stop-hands-free`; 120 commands, none failed) | p50 0.87 ms, p95 2.66 ms, max 8.04 ms | goal < 25 ms met; gate p95 <= 50 ms passed |
+| LED latency, same run (informational) | green after touch-down: median 17.8 ms, max 35 ms. Red after release with the device silent (worst case): median 44.8 ms, max 46.1 ms | none |
+| Idle CPU of the packaged app (`scripts/measure_idle.py`, 90 s, device attached, nobody touching it), two runs | 0.121% and 0.132% of a core. For history: 0.27% with a fixed 50 ms HID read timeout | goal < 0.2% met |
+| Idle memory of the packaged app, two runs | footprint 45.0 and 48.0 MB; resident 102-106 MB (includes shared system frameworks) | goal revised to < 50 MB footprint |
+| CPU while no device is plugged in (polling twice a second, vendor-filtered enumeration) | 0.19% | goal < 0.2% met (narrowly) |
+
+The latency figure covers the software only: from the HID thread decoding a touch to the command having been handed to LaunchServices. It excludes the USB transfer (microseconds) and Wispr Flow's own reaction. The figure with the real button, and the hotplug gate, need a person (`docs/manual-tests.md` section 6) and are **not yet measured**.
+
+**Read timeout design.** An idle device is read with a 250 ms timeout (4 wake-ups a second instead of 20), which is what brought idle CPU under the goal. After any touch edge the reads drop to 40 ms for a second, so the LED changes that follow a touch reach the device promptly even if the device goes quiet: with a 250 ms timeout alone, the light returning to red after a release could lag by up to 250 ms. The 250 ms bound still applies to changes with no touch behind them (Wispr quitting, an error flash ending) and to how soon the worker notices stop or pause.

@@ -82,7 +82,22 @@ Build with `scripts/build_app.sh` and `scripts/make_dmg.sh` (see `releasing.md`)
 
 ## 6. Release gates (specs/spec.md section 8)
 
-- [ ] Latency: the headless runner prints a summary on exit; p95 must be 50 ms or less
-- [ ] Hotplug: 20 unplug/replug cycles, each recovered within 3 s
-- [ ] Memory and CPU of the packaged app idle (informational): Activity Monitor
-- [ ] Wispr compatibility: sections 1 and 3 above against the installed Wispr Flow
+Already measured without a person (see spec section 10.1); re-run before a release:
+
+```bash
+.venv/bin/python scripts/measure_latency.py --taps 100 --holds 10    # software path, gate p95 <= 50 ms
+.venv/bin/python scripts/measure_idle.py "dist/MuteMe Flow.app"         # idle memory and CPU, informational
+```
+
+Need a person:
+
+- [ ] **Real-button latency:** run `scripts/run_headless.py`, tap and hold about 30 times,
+      quit with Ctrl-C; it prints the touch-to-dispatch summary. p95 must be 50 ms or less
+- [ ] **Hotplug:** `.venv/bin/python scripts/measure_hotplug.py --cycles 20`, unplugging and
+      replugging when asked; all 20 must be measured and every one within 3 s
+- [ ] **Light feels instant:** with the headless runner or the app, hold the button, then
+      release it: the light should return to red without a visible lag (measured about
+      45 ms in the worst case with a synthetic device)
+- [ ] **Wispr compatibility:** sections 1 and 3 above against the installed Wispr Flow
+- [ ] **Heartbeat with the official MuteMe app running** (optional, needs that app): does the
+      device's idle heartbeat change (spec section 10, question 5)?

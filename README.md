@@ -1,21 +1,62 @@
 # MuteMe Flow
 
-A lightweight macOS menu bar app that turns a **MuteMe** USB button into a
-push-to-talk / tap-to-toggle control for **Wispr Flow** dictation, with the button's
-LED showing whether you are dictating.
+A lightweight macOS menu bar app that turns a **MuteMe** USB button into a push-to-talk /
+tap-to-toggle control for **Wispr Flow** dictation, with the button's light showing whether
+you are dictating.
+
+![A MuteMe button glowing green next to a laptop showing a dictation window, above four buttons showing what each light colour means: red is idle, green is dictating, blue means Wispr Flow is not running, and yellow means something needs attention.](docs/images/hero.svg)
 
 > MuteMe Flow is an independent open-source project and is not affiliated with,
 > endorsed by, or sponsored by MuteMe or Wispr Flow.
 
-## Status
+## Using it
 
-Early development: the menu bar app is not built yet. The intended behaviour is defined
-in [`specs/spec.md`](specs/spec.md):
+- **Tap** the button to start dictating, tap again to stop (hands-free).
+- **Hold** the button to dictate while you hold it (push-to-talk).
+- The light shows what is going on:
 
-- **Tap** the button to start dictation, tap again to stop (hands-free).
-- **Hold** the button to dictate while held (push-to-talk).
-- The LED is red when idle and green while dictating (best-effort: the app cannot read
-  Wispr Flow's real state, see spec section 4.3).
+| Light | Meaning |
+| :--- | :--- |
+| Red | Idle |
+| Green | Dictating |
+| Blue | Wispr Flow is not running (touching the button does nothing) |
+| Yellow | A problem: see the menu bar item, which says which (below) |
+
+The light is best-effort: MuteMe Flow cannot read Wispr Flow's real state, so if you start or
+stop dictation another way the light can lag until the next touch.
+
+The menu bar item (a microphone) shows the status (for example `Status: Ready (MuteMe
+connected)` or `Status: Dictating`) and lets you choose how long a touch must last to count
+as a hold (250, 350 or 500 ms), turn on Start at Login, copy diagnostics for a bug report,
+open the help page, and quit. It has no Dock icon.
+
+## Installing
+
+1. Open the DMG and drag **MuteMe Flow** to Applications.
+2. A release that is not notarized (see the release notes) is refused by macOS the first
+   time. On macOS 15 and later, try to open it, then go to **System Settings > Privacy &
+   Security** and choose **Open Anyway**. On macOS 13 and 14, right-click the app and choose
+   Open. Either way you are overriding Gatekeeper for an app that Apple has not checked,
+   so only do it for a copy you trust.
+3. Quit the official MuteMe app if it is running: it competes for the button and resets the
+   light. MuteMe Flow notices and offers to quit it for you.
+
+Requires macOS 13 or later and Wispr Flow.
+
+## Troubleshooting
+
+| You see | Likely cause and fix |
+| :--- | :--- |
+| `Status: MuteMe not connected` | The button is unplugged or on a charge-only cable |
+| `Status: Wispr Flow not running` | Start Wispr Flow. Touches are ignored until then, on purpose, so the button never launches it |
+| `Status: Official MuteMe app is running` | Click the warning row to quit it, or quit it yourself |
+| `Status: Cannot open device` | Another program holds the button. Quit the official MuteMe app first |
+| `Status: Wispr command failed` | MuteMe Flow could not reach Wispr Flow; check that it is installed and running |
+| `Start at Login (installed app only)` is greyed out | It can only be turned on in the installed app, not when run from source |
+
+**Still stuck?** Choose **Copy Diagnostics** from the menu and paste the result into an issue.
+It contains versions, the device model and recent log lines (with your home folder removed),
+and never audio or dictated text. The full log is in `~/Library/Logs/MuteMe Flow/`.
 
 ## Supported devices
 
@@ -27,33 +68,31 @@ in [`specs/spec.md`](specs/spec.md):
 
 The untested devices are enabled on a best-effort basis; reports from owners are welcome.
 
-## Requirements
-
-- macOS 13 or later
-- Wispr Flow installed
-- The official MuteMe app must be quit; it competes for the device and resets the LED
-
 ## Development
 
-The pure-Python logic is covered by unit tests that need no device, no Wispr Flow and
-no macOS frameworks, so they also run on Linux CI.
+The behaviour is specified in [`specs/spec.md`](specs/spec.md). The pure-Python logic is
+covered by unit tests that need no device, no Wispr Flow and no macOS frameworks, so they
+also run on Linux CI.
 
 ```bash
 nix-shell                      # tools: just, ruff, pytest, python
 just validate                  # lint + format check + tests
 ```
 
-To run against real hardware, create a virtual environment on macOS:
+To run against real hardware, set up the virtual environment described in
+[`docs/releasing.md`](docs/releasing.md), then:
 
 ```bash
-python3 -m venv .venv
-.venv/bin/pip install -e '.[dev,build]'   # build adds py2app for the packaging spike
+.venv/bin/python -m muteme_flow                  # the menu bar app
+.venv/bin/pytest tests/test_appkit_contract.py   # checks the real macOS APIs (needs PyObjC)
 ```
 
-Spikes that need a real device or Wispr Flow live in [`spikes/`](spikes/); each has its
-own instructions.
+- [`docs/manual-tests.md`](docs/manual-tests.md): everything that needs the real device
+- [`docs/releasing.md`](docs/releasing.md): building the app and DMG, and cutting a release
+- [`scripts/`](scripts/): build, signing, measurement and hardware test scripts
+- [`spikes/`](spikes/): throwaway experiments that settled early questions
 
-## Repository tooling
+### Repository tooling
 
 - **Git hooks** (`.githooks/`, enabled by `direnv allow`): `commit-msg` enforces
   [Conventional Commits](https://www.conventionalcommits.org/) titles and `pre-commit` runs
