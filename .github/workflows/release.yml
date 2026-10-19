@@ -108,12 +108,17 @@ jobs:
         if: env.HAS_CERT == 'true'
         run: scripts/notarize.sh dist/MuteMe-Flow-*.dmg
 
-      - name: Write the release notes
+      - name: Stage the release files
         run: |
+          # One folder holding exactly what the release job needs. Uploading dist/ and a
+          # file from the repository root separately made upload-artifact keep the dist/
+          # prefix, so the release job's glob found nothing (found by the first run).
+          mkdir release
+          cp dist/MuteMe-Flow-*.dmg release/
           if [ "$HAS_CERT" = true ]; then
-            echo "Signed and notarized: open the DMG and drag the app to Applications." > notes.md
+            echo "Signed and notarized: open the DMG and drag the app to Applications." > release/notes.md
           else
-            cat > notes.md <<'NOTES'
+            cat > release/notes.md <<'NOTES'
           **This build is not notarized.** After dragging MuteMe Flow to Applications,
           right-click the app and choose Open the first time (macOS will otherwise refuse it).
           NOTES
@@ -122,9 +127,9 @@ jobs:
             echo
             echo "SHA-256:"
             echo '```'
-            (cd dist && shasum -a 256 MuteMe-Flow-*.dmg)
+            (cd release && shasum -a 256 MuteMe-Flow-*.dmg)
             echo '```'
-          } >> notes.md
+          } >> release/notes.md
 
       - name: Remove the signing keychain
         if: always() && env.HAS_CERT == 'true'
@@ -136,9 +141,8 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: release
-          path: |
-            dist/MuteMe-Flow-*.dmg
-            notes.md
+          # A single folder, so its contents sit at the artifact's root.
+          path: release/
           if-no-files-found: error
 
   release:

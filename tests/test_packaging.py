@@ -220,6 +220,8 @@ def test_steps_run_in_a_safe_order(workflow):
         "Notarize the app",
         "Build the DMG",
         "Notarize the DMG",
+        "Stage the release files",
+        "Keep the build for the release job",
     ]
     indexes = [step_index(workflow, name) for name in order]
     assert indexes == sorted(indexes)
@@ -249,3 +251,20 @@ def test_every_secret_the_workflow_uses_is_documented():
     documented = (ROOT / "docs" / "releasing.md").read_text()
     missing = {name for name in used if name not in documented}
     assert not missing, f"undocumented secrets: {sorted(missing)}"
+
+
+def test_the_release_job_finds_its_files_at_the_root_of_the_artifact(workflow):
+    # upload-artifact keeps directory prefixes when the uploaded paths share only the
+    # repository root, which broke the first real release run: the release job's glob
+    # found nothing under dist/. One staged folder has no such ambiguity.
+    upload = steps(workflow)[step_index(workflow, "Keep the build for the release job")]
+    path = upload["with"]["path"].strip()
+    assert "\n" not in path, "upload a single folder, not several paths"
+    assert path.endswith("/")
+    stage = steps(workflow)[step_index(workflow, "Stage the release files")]["run"]
+    assert f"cp dist/MuteMe-Flow-*.dmg {path}" in stage
+    assert f"{path}notes.md" in stage
+    release_runs = " ".join(step.get("run", "") for step in steps(workflow, "release"))
+    assert "dist/" not in release_runs
+    assert "MuteMe-Flow-*.dmg" in release_runs
+    assert "notes.md" in release_runs
