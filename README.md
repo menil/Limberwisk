@@ -32,10 +32,10 @@ open the help page, and quit. It has no Dock icon.
 
 ## Installing
 
-> **No release has been published yet.** Once there is one, download its DMG
-> (`MuteMe-Flow-<version>.dmg`) from the
-> [Releases page](https://github.com/menil/wisprflow-muteme-bridge/releases). Until then,
-> [build it yourself](docs/releasing.md#building-locally); the DMG is written to `dist/`.
+Download [**MuteMe-Flow.dmg**](https://github.com/menil/wisprflow-muteme-bridge/releases/latest/download/MuteMe-Flow.dmg),
+the latest release (older versions are on the
+[Releases page](https://github.com/menil/wisprflow-muteme-bridge/releases)). You can also
+[build it yourself](docs/releasing.md#building-locally); the DMG is written to `dist/`.
 
 1. Open the DMG and drag **MuteMe Flow** to Applications.
 2. A release that is not notarized (see the release notes) is refused by macOS the first

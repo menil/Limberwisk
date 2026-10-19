@@ -15,6 +15,9 @@ Review the draft, then publish it.
    the human summary, so keep both.
 4. Merge, then push the tag (`git tag v1.0.0 && git push origin v1.0.0`).
 5. Review the draft release the workflow creates, then publish it.
+   The release carries the DMG twice, as `MuteMe-Flow-<version>.dmg` and as `MuteMe-Flow.dmg`:
+   the README links to `releases/latest/download/MuteMe-Flow.dmg`, which GitHub resolves to
+   the newest published release that is not a draft or prerelease.
 
 Details:
 
