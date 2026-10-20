@@ -146,3 +146,80 @@ def test_service_management_constants_and_settings_link():
 def test_the_rumps_private_attribute_we_rely_on_to_hide_a_row_exists():
     rumps = pytest.importorskip("rumps")
     assert hasattr(rumps.MenuItem("x")._menuitem, "setHidden_")
+
+
+def test_rumps_input_device_menu_structure():
+    rumps = pytest.importorskip("rumps")
+    from muteme_flow.settings import INPUT_DISPLAY_NAMES
+
+    input_menu = rumps.MenuItem("Input Device")
+    for name in INPUT_DISPLAY_NAMES.values():
+        input_menu.add(rumps.MenuItem(name))
+
+    assert len(input_menu) == len(INPUT_DISPLAY_NAMES)
+    assert set(item.title for item in input_menu.values()) == set(INPUT_DISPLAY_NAMES.values())
+    assert "MuteMe" in set(INPUT_DISPLAY_NAMES.values())
+
+
+def test_app_menu_reflects_active_input_and_conflict_title():
+    pytest.importorskip("rumps")
+    from unittest.mock import MagicMock
+
+    from muteme_flow.app import MuteMeFlowApp
+    from muteme_flow.settings import Settings
+
+    class InMemoryStore:
+        def __init__(self):
+            self.data = {}
+
+        def get_int(self, key):
+            return self.data.get(key)
+
+        def set_int(self, key, val):
+            self.data[key] = val
+
+        def get_str(self, key):
+            return self.data.get(key)
+
+        def set_str(self, key, val):
+            self.data[key] = val
+
+        def get_bool(self, key):
+            return self.data.get(key)
+
+        def set_bool(self, key, val):
+            self.data[key] = val
+
+    runtime = MagicMock()
+    runtime.controller.machine.device_connected = True
+    runtime.controller.machine.conflict = False
+    runtime.controller.machine.command_failed = False
+    runtime.controller.machine.open_failed = False
+    runtime.controller.machine.wispr_running = True
+    runtime.controller.machine.recording = False
+    runtime.connected_device_name = "MuteMe"
+
+    settings = Settings(InMemoryStore())
+    login_item = MagicMock()
+    login_item.available = False
+    conflict = MagicMock()
+    recent = MagicMock()
+
+    app = MuteMeFlowApp(
+        runtime=runtime,
+        settings=settings,
+        login_item=login_item,
+        conflict=conflict,
+        recent_lines=recent,
+    )
+
+    assert app._device_row.title == "Input: MuteMe (connected)"
+    assert app._conflict_row.title == "⚠️ Official MuteMe app is running (click to quit)"
+    assert app._input_rows["muteme"].state == 1
+
+    # Dynamic device name and conflict state
+    runtime.connected_device_name = "KeySwitch"
+    runtime.controller.machine.conflict = True
+    app.refresh()
+    assert app._conflict_row.title == "⚠️ Official KeySwitch app is running (click to quit)"
+    assert app._device_row.title == "Input: KeySwitch (connected)"
