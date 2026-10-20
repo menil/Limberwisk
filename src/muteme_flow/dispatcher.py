@@ -33,15 +33,22 @@ class NSWorkspaceDispatcher:
         workspace: Any,
         make_configuration: Callable[[], Any],
         make_url: Callable[[str], Any],
+        bundle_id: str = WISPR_BUNDLE_ID,
+        app_name: str = "Wispr Flow",
     ) -> None:
         self._post_to_main = post_to_main
         self._workspace = workspace
         self._make_configuration = make_configuration
         self._make_url = make_url
+        self._bundle_id = bundle_id
+        self._app_name = app_name
 
     @classmethod
     def for_current_app(
-        cls, post_to_main: Callable[[Callable[[], None]], None]
+        cls,
+        post_to_main: Callable[[Callable[[], None]], None],
+        bundle_id: str = WISPR_BUNDLE_ID,
+        app_name: str = "Wispr Flow",
     ) -> "NSWorkspaceDispatcher":
         # Imported here so the module loads where AppKit is unavailable (Linux CI).
         from AppKit import NSWorkspace, NSWorkspaceOpenConfiguration
@@ -52,6 +59,8 @@ class NSWorkspaceDispatcher:
             workspace=NSWorkspace.sharedWorkspace(),
             make_configuration=NSWorkspaceOpenConfiguration.configuration,
             make_url=NSURL.URLWithString_,
+            bundle_id=bundle_id,
+            app_name=app_name,
         )
 
     def dispatch(self, command: Command, on_complete: Completion) -> None:
@@ -63,9 +72,9 @@ class NSWorkspaceDispatcher:
             self._complete(on_complete, DispatchError(f"{type(error).__name__}: {error}"))
 
     def _open(self, command: Command, on_complete: Completion) -> None:
-        app_url = self._workspace.URLForApplicationWithBundleIdentifier_(WISPR_BUNDLE_ID)
+        app_url = self._workspace.URLForApplicationWithBundleIdentifier_(self._bundle_id)
         if app_url is None:
-            self._complete(on_complete, DispatchError("Wispr Flow is not installed"))
+            self._complete(on_complete, DispatchError(f"{self._app_name} is not installed"))
             return
 
         configuration = self._make_configuration()
