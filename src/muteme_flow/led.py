@@ -41,6 +41,21 @@ class LedMailbox:
             self._wanted = color
             self._dirty = True
 
+    def set_state(self, state: object) -> None:
+        """Conform to FeedbackSink by accepting a FeedbackState or Color.
+
+        FeedbackState is the preferred semantic representation for decoupled
+        feedback sinks. Color is supported for direct/legacy callers.
+        """
+        from muteme_flow.protocols import FeedbackState, feedback_state_to_color
+
+        if isinstance(state, FeedbackState):
+            self.request(feedback_state_to_color(state))
+        elif isinstance(state, Color):
+            self.request(state)
+        else:
+            raise ValueError(f"Expected FeedbackState or Color, got: {state!r}")
+
     def mark_for_resend(self) -> None:
         """Re-queue the last colour, for a freshly (re)connected device that lost it."""
         with self._lock:

@@ -24,7 +24,7 @@ class InputEvent(Enum):
     UP = auto()
 
 
-InputEventHandler = Callable[[InputEvent, float], None]
+InputEventHandler = Callable[[InputEvent], None]
 
 
 @runtime_checkable
