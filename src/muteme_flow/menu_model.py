@@ -28,26 +28,45 @@ class StatusSource(Protocol):
     def recording(self) -> bool: ...
 
 
-def status_message(source: StatusSource) -> str:
+def status_message(
+    source: StatusSource,
+    backend_name: str | None = None,
+    device_name: str | None = None,
+) -> str:
     """The single most useful status; earlier conditions explain later ones."""
+    effective_backend = (
+        backend_name if backend_name is not None else getattr(source, "backend_name", "Wispr Flow")
+    )
+    effective_device = (
+        device_name if device_name is not None else getattr(source, "device_name", "MuteMe")
+    )
+
     if source.command_failed:
-        return "Wispr command failed"
+        return (
+            "Wispr command failed"
+            if effective_backend == "Wispr Flow"
+            else f"{effective_backend} command failed"
+        )
     if source.conflict:
         # The official app holding the device is also why the device may not open.
-        return "Official MuteMe app is running"
+        return f"Official {effective_device} app is running"
     if source.open_failed:
         return "Cannot open device"
     if not source.device_connected:
-        return "MuteMe not connected"
+        return f"{effective_device} not connected"
     if not source.wispr_running:
-        return "Wispr Flow not running"
+        return f"{effective_backend} not running"
     if source.recording:
         return "Dictating"
-    return "Ready (MuteMe connected)"
+    return f"Ready ({effective_device} connected)"
 
 
-def status_text(source: StatusSource) -> str:
-    return f"Status: {status_message(source)}"
+def status_text(
+    source: StatusSource,
+    backend_name: str | None = None,
+    device_name: str | None = None,
+) -> str:
+    return f"Status: {status_message(source, backend_name=backend_name, device_name=device_name)}"
 
 
 def menu_title(source: StatusSource) -> str:

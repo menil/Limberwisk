@@ -233,6 +233,12 @@ class StateMachine:
         self._forget_touch()
         self._sync_outputs(force=True)
 
+    def stop_recording(self) -> None:
+        """Halt active recording and return to idle, dispatching STOP if in progress."""
+        if self._closed or not self.recording:
+            return
+        self._end_recording()
+
     def shutdown(self) -> None:
         """App is quitting: stop any recording, leave the LED red, then go inert."""
         if self._closed:

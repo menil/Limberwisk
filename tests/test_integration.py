@@ -98,7 +98,7 @@ class System:
     def led_on_device(self, color):
         return wait_until(lambda: led_report(color) in self.device.writes)
 
-    def make_runtime(self, pump=lambda seconds: None, order=None):
+    def make_runtime(self, pump=lambda seconds: None, order=None, audio_sink=None):
         order = order if order is not None else []
         self.power_callbacks = {}
 
@@ -106,12 +106,23 @@ class System:
             self.power_callbacks = {"sleep": on_sleep, "wake": on_wake}
             return Recorder("power", order)
 
+        def make_backend(choice):
+            class MockBackend:
+                name = "EnviousWispr" if choice == "envious-wispr" else "Wispr Flow"
+
+                def is_running(self):
+                    return True
+
+            return MockBackend(), Recorder(f"presence-{choice}", order)
+
         return Runtime(
             controller=self.controller,
             worker=self.worker,
             presence=Recorder("presence", order),
             make_power=make_power,
             pump=pump,
+            audio_sink=audio_sink,
+            backend_factory=make_backend,
         )
 
 
@@ -267,14 +278,62 @@ def test_the_worker_is_stopped_even_if_an_earlier_stop_step_fails():
 
 
 def test_the_connected_model_is_available_for_diagnostics():
+    from muteme_flow.devices import DeviceId
+
     s = System()
     runtime = s.make_runtime()
     assert runtime.connected_device_id is None
+    assert runtime.connected_device_name == "MuteMe"
     runtime.start()
     assert s.main.run_until(lambda: s.machine.device_connected)
+
+    # Real DeviceId object
+    s.device.device_id = DeviceId(0x3603, 0x0001, "MuteMe Original")
+    assert runtime.connected_device_name == "MuteMe Original"
+
+    # Duck-typed string fallback
     s.device.device_id = "the model"
     assert runtime.connected_device_id == "the model"
+    assert runtime.connected_device_name == "the model"
     runtime.stop()
+
+
+def test_runtime_switch_backend_stops_active_recording_and_updates_presence():
+    s = System()
+    runtime = s.make_runtime()
+    runtime.start()
+    assert s.main.run_until(lambda: s.machine.device_connected)
+
+    # Start recording
+    s.device.feed(*seq.tap())
+    s.wait_for_state(State.RECORDING_LOCKED)
+    assert s.machine.recording is True
+    assert s.dispatcher.sent == [Command.START]
+
+    # Switch backend to envious-wispr while recording is active
+    runtime.switch_backend("envious-wispr")
+
+    # Verify active recording was cleanly halted on outgoing backend
+    assert s.dispatcher.sent == [Command.START, Command.STOP]
+    assert s.machine.recording is False
+    assert runtime.backend_name == "EnviousWispr"
+
+    runtime.stop()
+
+
+def test_runtime_audio_feedback_toggle():
+    s = System()
+
+    class FakeAudioSink:
+        def __init__(self):
+            self.enabled = False
+
+    sink = FakeAudioSink()
+    runtime = s.make_runtime(audio_sink=sink)
+    runtime.set_audio_feedback(True)
+    assert sink.enabled is True
+    runtime.set_audio_feedback(False)
+    assert sink.enabled is False
 
 
 def test_runtime_stop_stops_a_recording_and_leaves_the_led_red():

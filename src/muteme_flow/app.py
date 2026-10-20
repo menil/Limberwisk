@@ -36,7 +36,12 @@ from muteme_flow.menu_model import (
     status_text,
 )
 from muteme_flow.runtime import Runtime
-from muteme_flow.settings import HOLD_THRESHOLD_CHOICES_MS, Settings, UserDefaultsStore
+from muteme_flow.settings import (
+    BACKEND_DISPLAY_NAMES,
+    HOLD_THRESHOLD_CHOICES_MS,
+    Settings,
+    UserDefaultsStore,
+)
 from muteme_flow.termination import install_termination_handlers, keep_interpreter_responsive
 
 log = logging.getLogger(__name__)
@@ -77,6 +82,7 @@ class MuteMeFlowApp(rumps.App):
         self._conflict_row = rumps.MenuItem(
             CONFLICT_ITEM, callback=self._action(self._quit_official)
         )
+        self._device_row = rumps.MenuItem("Input: MuteMe")
         self._threshold_menu = rumps.MenuItem("Hold Threshold")
         self._threshold_rows = {
             ms: rumps.MenuItem(f"{ms} ms", callback=self._action(self._threshold_choice(ms)))
@@ -84,6 +90,19 @@ class MuteMeFlowApp(rumps.App):
         }
         for row in self._threshold_rows.values():
             self._threshold_menu.add(row)
+
+        self._backend_menu = rumps.MenuItem("Dictation App")
+        self._backend_rows = {
+            backend: rumps.MenuItem(name, callback=self._action(self._backend_choice(backend)))
+            for backend, name in BACKEND_DISPLAY_NAMES.items()
+        }
+        for row in self._backend_rows.values():
+            self._backend_menu.add(row)
+
+        self._audio_feedback_row = rumps.MenuItem(
+            "Audio Chime Feedback", callback=self._action(self._toggle_audio_feedback)
+        )
+
         self._login_row = rumps.MenuItem("Start at Login")
         if login_item.available:
             self._login_row.set_callback(self._action(self._toggle_login))
@@ -93,8 +112,11 @@ class MuteMeFlowApp(rumps.App):
         self.menu = [
             self._status,
             self._conflict_row,
+            self._device_row,
             rumps.MenuItem(MODE_LINE),
             self._threshold_menu,
+            self._backend_menu,
+            self._audio_feedback_row,
             None,
             self._login_row,
             rumps.MenuItem("Copy Diagnostics", callback=self._action(self._copy_diagnostics)),
@@ -106,14 +128,30 @@ class MuteMeFlowApp(rumps.App):
 
     def refresh(self) -> None:
         """Bring every row in line with the current state. Main thread only."""
+        current_backend = self._settings.dictation_backend
+        backend_name = self._settings.dictation_backend_display_name
+        dev_name = getattr(self._runtime, "connected_device_name", "MuteMe")
+        dev_status = "connected" if self._machine.device_connected else "disconnected"
+
         self.title = menu_title(self._machine)
-        self._status.title = status_text(self._machine)
+        self._status.title = status_text(
+            self._machine, backend_name=backend_name, device_name=dev_name
+        )
+        self._device_row.title = f"Input: {dev_name} ({dev_status})"
         # Hidden rather than removed: rumps keys rows by title, and this row comes and goes.
         _set_hidden(self._conflict_row, not self._machine.conflict)
 
-        current = self._settings.hold_threshold_ms
+        current_threshold = self._settings.hold_threshold_ms
         for ms, row in self._threshold_rows.items():
-            row.state = _SELECTED if ms == current else _UNSELECTED
+            row.state = _SELECTED if ms == current_threshold else _UNSELECTED
+
+        for key, row in self._backend_rows.items():
+            row.state = _SELECTED if key == current_backend else _UNSELECTED
+
+        self._audio_feedback_row.state = (
+            _SELECTED if self._settings.audio_feedback_enabled else _UNSELECTED
+        )
+
         if self._login_item.available:
             self._login_row.state = _SELECTED if self._login_enabled else _UNSELECTED
 
@@ -143,6 +181,24 @@ class MuteMeFlowApp(rumps.App):
         """Menu callbacks run inside AppKit, where an exception would only reach stderr."""
         run = guarded(fn, "menu action")
         return lambda _sender: run()
+
+    def _backend_choice(self, choice: str) -> Callable[[], None]:
+        def choose() -> None:
+            if choice == self._settings.dictation_backend:
+                return
+            self._settings.set_dictation_backend(choice)
+            if hasattr(self._runtime, "switch_backend"):
+                self._runtime.switch_backend(choice)
+            self.refresh()
+
+        return choose
+
+    def _toggle_audio_feedback(self) -> None:
+        new_val = not self._settings.audio_feedback_enabled
+        self._settings.set_audio_feedback_enabled(new_val)
+        if hasattr(self._runtime, "set_audio_feedback"):
+            self._runtime.set_audio_feedback(new_val)
+        self.refresh()
 
     def _threshold_choice(self, ms: int) -> Callable[[], None]:
         def choose() -> None:
@@ -181,7 +237,12 @@ class MuteMeFlowApp(rumps.App):
             self._conflict.terminate(apps)  # exactly the apps that were shown
 
     def _copy_diagnostics(self) -> None:
-        info = collect_info(status_message(self._machine), self._runtime.connected_device_id)
+        backend_name = self._settings.dictation_backend_display_name
+        dev_name = getattr(self._runtime, "connected_device_name", "MuteMe")
+        info = collect_info(
+            status_message(self._machine, backend_name=backend_name, device_name=dev_name),
+            self._runtime.connected_device_id,
+        )
         text = format_diagnostics(info, self._recent_lines.lines())
         pasteboard = NSPasteboard.generalPasteboard()
         pasteboard.clearContents()
@@ -212,7 +273,11 @@ def _run(recent_lines: RecentLines) -> None:
     NSApplication.sharedApplication().setActivationPolicy_(NSApplicationActivationPolicyAccessory)
 
     settings = Settings(UserDefaultsStore())
-    runtime = Runtime.create_default(timings=settings.timings())
+    runtime = Runtime.create_default(
+        timings=settings.timings(),
+        backend_choice=settings.dictation_backend,
+        audio_feedback=settings.audio_feedback_enabled,
+    )
     conflict = ConflictMonitor.for_current_app(runtime.controller.conflict_changed)
     app = MuteMeFlowApp(
         runtime=runtime,
@@ -241,3 +306,7 @@ def _run(recent_lines: RecentLines) -> None:
     finally:
         # Reached when the loop ends by a route other than our own quit paths.
         app.shutdown()
+
+
+if __name__ == "__main__":
+    run()
