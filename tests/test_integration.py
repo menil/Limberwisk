@@ -409,3 +409,150 @@ def test_sleeping_releases_the_device_and_waking_reconnects_then_resyncs_wispr()
     assert s.machine.state is State.IDLE
     assert wait_until(lambda: led_report(Color.RED) in replacement.writes)
     runtime.stop()
+
+
+def test_runtime_switch_input_stops_active_recording():
+    s = System()
+    runtime = s.make_runtime()
+    runtime.start()
+    assert s.main.run_until(lambda: s.machine.device_connected)
+    s.device.feed(*seq.tap())
+    s.wait_for_state(State.RECORDING_LOCKED)
+    assert s.machine.recording
+
+    class DummyInput:
+        name = "Pedal"
+        conflicting_bundle_ids = frozenset()
+        conflicting_app_names = frozenset()
+
+        def start(self, on_event):
+            pass
+
+        def stop(self):
+            pass
+
+    runtime._input_factory = lambda choice: DummyInput()
+    runtime.switch_input("pedal")
+
+    # State machine stops recording when input is switched and resets device connection state
+    assert not s.machine.recording
+    assert s.machine.device_connected is False
+    assert s.dispatcher.sent == [Command.START, Command.STOP]
+    assert runtime.input_source_name == "Pedal"
+    runtime.stop()
+
+
+def test_runtime_switch_input_stops_previous_source_and_preserves_on_failure():
+    s = System()
+    runtime = s.make_runtime()
+    runtime.start()
+
+    stopped = []
+
+    class TrackedInput:
+        def __init__(self, name):
+            self.name = name
+            self.conflicting_bundle_ids = frozenset()
+            self.conflicting_app_names = frozenset()
+
+        def start(self, on_event):
+            pass
+
+        def stop(self):
+            stopped.append(self.name)
+
+    inputs = {"in1": TrackedInput("in1"), "in2": TrackedInput("in2")}
+    runtime._input_factory = lambda choice: inputs[choice]
+
+    runtime.switch_input("in1")
+    assert runtime.input_source_name == "in1"
+    assert stopped == []
+
+    runtime.switch_input("in2")
+    assert runtime.input_source_name == "in2"
+    assert stopped == ["in1"]
+
+    # Switching to an invalid input raises ValueError without stopping in2
+    with pytest.raises(KeyError):
+        runtime.switch_input("invalid")
+    assert runtime.input_source_name == "in2"
+    assert stopped == ["in1"]
+    runtime.stop()
+
+
+def test_runtime_default_input_factory_and_create_default_validation():
+    s = System()
+    runtime = s.make_runtime()
+
+    # Valid default input produces MuteMeInputSource
+    muteme_src = runtime._default_input_factory("muteme")
+    assert muteme_src.name == "MuteMe"
+
+    with pytest.raises(ValueError, match="Unknown input source"):
+        runtime._default_input_factory("invalid-device")
+
+    # create_default validates input_choice
+    with pytest.raises(ValueError, match="Unknown input source"):
+        Runtime.create_default(input_choice="unsupported")
+
+
+def test_runtime_conflict_monitor_setter_syncs_with_existing_input_source():
+    s = System()
+    runtime = s.make_runtime()
+
+    class MockConflictInput:
+        name = "Keyboard"
+        conflicting_bundle_ids = frozenset({"com.test.app"})
+        conflicting_app_names = frozenset({"TestApp"})
+
+        def start(self, on_event):
+            pass
+
+        def stop(self):
+            pass
+
+    runtime._input_source = MockConflictInput()
+
+    class MockConflictMonitor:
+        def __init__(self):
+            self.conflicts = []
+
+        def set_conflicts(self, bundle_ids, app_names):
+            self.conflicts.append((bundle_ids, app_names))
+
+    monitor = MockConflictMonitor()
+    # Assigning to setter immediately syncs declared conflicts
+    runtime.conflict_monitor = monitor
+    assert monitor.conflicts == [(frozenset({"com.test.app"}), frozenset({"TestApp"}))]
+
+
+def test_runtime_switch_input_updates_conflict_monitor():
+    s = System()
+    runtime = s.make_runtime()
+
+    class MockConflictMonitor:
+        def __init__(self):
+            self.conflicts = []
+
+        def set_conflicts(self, bundle_ids, app_names):
+            self.conflicts.append((bundle_ids, app_names))
+
+    monitor = MockConflictMonitor()
+    runtime.conflict_monitor = monitor
+
+    class ConflictInput:
+        name = "SpecialDevice"
+        conflicting_bundle_ids = frozenset({"com.vendor.special"})
+        conflicting_app_names = frozenset({"SpecialApp"})
+
+        def start(self, on_event):
+            pass
+
+        def stop(self):
+            pass
+
+    runtime._input_factory = lambda choice: ConflictInput()
+    runtime.switch_input("special")
+
+    assert (frozenset({"com.vendor.special"}), frozenset({"SpecialApp"})) in monitor.conflicts
+    runtime.stop()

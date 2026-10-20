@@ -17,6 +17,13 @@ BACKEND_DISPLAY_NAMES = {
 _BACKEND_KEY = "dictationBackend"
 _AUDIO_FEEDBACK_KEY = "audioFeedbackEnabled"
 
+INPUT_CHOICES = ("muteme",)
+DEFAULT_INPUT = "muteme"
+INPUT_DISPLAY_NAMES = {
+    "muteme": "MuteMe",
+}
+_INPUT_KEY = "inputSource"
+
 
 class SettingsStore(Protocol):
     def get_int(self, key: str) -> int | None: ...
@@ -109,6 +116,26 @@ class Settings:
         setter = getattr(self._store, "set_bool", None)
         if setter is not None:
             setter(_AUDIO_FEEDBACK_KEY, value)
+
+    @property
+    def input_source(self) -> str:
+        """Active hardware input provider choice ('muteme')."""
+        getter = getattr(self._store, "get_str", None)
+        stored = getter(_INPUT_KEY) if getter is not None else None
+        return stored if stored in INPUT_CHOICES else DEFAULT_INPUT
+
+    @property
+    def input_source_display_name(self) -> str:
+        """Human-readable display title for the active input source."""
+        return INPUT_DISPLAY_NAMES.get(self.input_source, "MuteMe")
+
+    def set_input_source(self, value: str) -> None:
+        """Persist the active input provider choice."""
+        if value not in INPUT_CHOICES:
+            raise ValueError(f"input source must be one of {INPUT_CHOICES}")
+        setter = getattr(self._store, "set_str", None)
+        if setter is not None:
+            setter(_INPUT_KEY, value)
 
     def timings(self) -> Timings:
         return Timings(hold_s=self.hold_threshold_ms / 1000)

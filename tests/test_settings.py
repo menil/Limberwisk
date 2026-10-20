@@ -92,6 +92,33 @@ def test_dictation_backend_display_name():
     assert settings.dictation_backend_display_name == "EnviousWispr"
 
 
+def test_input_source_defaults_to_muteme():
+    assert Settings(DictStore()).input_source == "muteme"
+
+
+def test_a_chosen_input_source_is_remembered():
+    store = DictStore()
+    settings = Settings(store)
+    settings.set_input_source("muteme")
+    assert settings.input_source == "muteme"
+
+
+def test_an_unlisted_input_source_is_rejected():
+    with pytest.raises(ValueError, match="input source"):
+        Settings(DictStore()).set_input_source("pedal-unknown")
+
+
+@pytest.mark.parametrize("stored", ["invalid", "", "keyboard", None])
+def test_an_unexpected_stored_input_source_falls_back_to_default(stored):
+    assert Settings(DictStore(inputSource=stored)).input_source == "muteme"
+
+
+def test_input_source_display_name():
+    store = DictStore()
+    settings = Settings(store)
+    assert settings.input_source_display_name == "MuteMe"
+
+
 def test_audio_feedback_defaults_to_disabled():
     assert Settings(DictStore()).audio_feedback_enabled is False
 

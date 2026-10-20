@@ -135,6 +135,10 @@ class Controller:
     def shutdown(self) -> None:
         self.machine.shutdown()
 
+    def schedule_refresh(self) -> None:
+        """Coalesce rapid events into a single UI refresh on the next run loop pass."""
+        self._schedule_refresh()
+
     def _schedule_refresh(self) -> None:
         """Defer the UI update until after the current transition, and merge bursts.
 
