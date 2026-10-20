@@ -24,6 +24,7 @@ from muteme_flow.protocols import (
     input_event_to_device_event,
 )
 from muteme_flow.scheduler import Scheduler
+from muteme_flow.settings import BACKEND_DISPLAY_NAMES, DEFAULT_BACKEND
 from muteme_flow.state_machine import StateMachine, Timings
 
 log = logging.getLogger(__name__)
@@ -79,6 +80,23 @@ class Controller:
     def outstanding_dispatches(self) -> int:
         """Commands handed to the system whose completion has not arrived yet."""
         return self._outstanding
+
+    @property
+    def backend(self) -> DictationBackend | None:
+        """Active dictation backend."""
+        return self._backend
+
+    @property
+    def backend_name(self) -> str:
+        """Active backend display name, or fallback if unset."""
+        if self._backend is not None and hasattr(self._backend, "name"):
+            return str(self._backend.name)
+        return BACKEND_DISPLAY_NAMES.get(DEFAULT_BACKEND, "Wispr Flow")
+
+    def set_backend(self, backend: DictationBackend) -> None:
+        """Switch the active dictation backend and synchronize running state."""
+        self._backend = backend
+        self.backend_running_changed(backend.is_running())
 
     def _set_feedback(self, color_or_state: Color | FeedbackState) -> None:
         if self._feedback is not None:

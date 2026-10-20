@@ -37,7 +37,7 @@ class InputSource(Protocol):
         ...
 
     def start(self, on_event: InputEventHandler) -> None:
-        """Start listening for inputs; invoke `on_event(event, timestamp)` on state changes."""
+        """Start listening for inputs; invoke `on_event(event)` on state changes."""
         ...
 
     def stop(self) -> None:

@@ -289,3 +289,78 @@ def test_controller_with_backend_and_feedback_protocols():
 
     assert backend.dispatched == [DictationCommand.START]
     assert FeedbackState.RECORDING in feedback.states
+
+
+def test_controller_set_backend_updates_active_backend_and_presence():
+    class MockBackend1:
+        name = "Wispr Flow"
+
+        def is_running(self):
+            return True
+
+    class MockBackend2:
+        name = "EnviousWispr"
+
+        def is_running(self):
+            return False
+
+    scheduler = FakeScheduler()
+    b1 = MockBackend1()
+    b2 = MockBackend2()
+    led = LedMailbox()
+    posted = []
+
+    controller = Controller(
+        backend=b1,
+        led=led,
+        scheduler=scheduler,
+        post_to_main=posted.append,
+    )
+    assert controller.backend is b1
+    assert controller.backend_name == "Wispr Flow"
+
+    controller.backend_running_changed(True)
+    assert controller.machine.wispr_running is True
+
+    controller.set_backend(b2)
+    assert controller.backend is b2
+    assert controller.backend_name == "EnviousWispr"
+    assert controller.machine.wispr_running is False
+
+    controller.set_backend(b1)
+    assert controller.backend is b1
+    assert controller.backend_name == "Wispr Flow"
+    assert controller.machine.wispr_running is True
+
+
+def test_controller_backend_name_fallback_when_unset():
+    scheduler = FakeScheduler()
+    led = LedMailbox()
+    posted = []
+
+    controller = Controller(
+        dispatcher=lambda cmd, cb: None,
+        led=led,
+        scheduler=scheduler,
+        post_to_main=posted.append,
+    )
+    assert controller.backend is None
+    assert controller.backend_name == "Wispr Flow"
+
+
+def test_state_machine_stop_recording_halts_active_dictation(rig):
+    rig.controller.machine.device_attached()
+    rig.event(DeviceEvent.DOWN)
+    rig.event(DeviceEvent.UP)
+    assert rig.machine.recording is True
+    assert len(rig.dispatched) == 1
+    assert rig.dispatched[0][0] == Command.START
+
+    rig.machine.stop_recording()
+    assert rig.machine.recording is False
+    assert len(rig.dispatched) == 2
+    assert rig.dispatched[1][0] == Command.STOP
+
+    # Subsequent stop_recording when not recording is a safe no-op
+    rig.machine.stop_recording()
+    assert len(rig.dispatched) == 2

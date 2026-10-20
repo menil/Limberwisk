@@ -85,8 +85,24 @@ def test_bundle_and_defaults_api():
     defaults = NSUserDefaults.standardUserDefaults()
     assert all(
         hasattr(defaults, name)
-        for name in ("objectForKey_", "integerForKey_", "setInteger_forKey_")
+        for name in (
+            "objectForKey_",
+            "integerForKey_",
+            "setInteger_forKey_",
+            "setObject_forKey_",
+            "boolForKey_",
+            "setBool_forKey_",
+        )
     )
+
+
+def test_sound_api_for_audio_feedback():
+    from AppKit import NSSound
+
+    assert hasattr(NSSound, "soundNamed_")
+    sound = NSSound.soundNamed_("Tink")
+    if sound is not None:
+        assert hasattr(sound, "play")
 
 
 def test_pasteboard_and_activation_policy_api():
