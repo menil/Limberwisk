@@ -206,3 +206,86 @@ def test_a_failing_refresh_is_logged_and_does_not_disturb_the_state_machine(rig,
     assert "menu bug" in caplog.text
     assert rig.machine.state is State.PENDING_TOUCH
     assert [command for command, _ in rig.dispatched] == [Command.START]
+
+
+def test_controller_requires_backend_or_dispatcher():
+    scheduler = FakeScheduler()
+    with pytest.raises(ValueError, match="Either backend or dispatcher must be provided"):
+        Controller(
+            scheduler=scheduler,
+            feedback=object(),
+            post_to_main=lambda fn: None,
+        )
+
+
+def test_controller_requires_feedback_or_led():
+    scheduler = FakeScheduler()
+    with pytest.raises(ValueError, match="Either feedback or led must be provided"):
+        Controller(
+            scheduler=scheduler,
+            dispatcher=object(),
+            post_to_main=lambda fn: None,
+        )
+
+
+def test_controller_with_backend_and_feedback_protocols():
+    from muteme_flow.protocols import (
+        DictationCommand,
+        FeedbackState,
+        InputEvent,
+    )
+
+    class MockBackend:
+        name = "Mock"
+        bundle_id = "mock.id"
+
+        def __init__(self):
+            self.dispatched = []
+
+        def dispatch(self, cmd, on_complete):
+            self.dispatched.append(cmd)
+            on_complete(None)
+
+        def is_running(self):
+            return True
+
+        def start_presence_watch(self, on_change):
+            pass
+
+        def stop_presence_watch(self):
+            pass
+
+    class MockFeedback:
+        def __init__(self):
+            self.states = []
+
+        def set_state(self, state):
+            self.states.append(state)
+
+        def mark_for_resend(self):
+            pass
+
+    scheduler = FakeScheduler()
+    backend = MockBackend()
+    feedback = MockFeedback()
+    posted = []
+
+    controller = Controller(
+        backend=backend,
+        feedback=feedback,
+        scheduler=scheduler,
+        post_to_main=posted.append,
+    )
+    controller.backend_running_changed(True)
+
+    # Process pending queue
+    while posted:
+        posted.pop(0)()
+
+    # Fire an InputEvent.DOWN
+    controller.on_device_event(InputEvent.DOWN)
+    while posted:
+        posted.pop(0)()
+
+    assert backend.dispatched == [DictationCommand.START]
+    assert FeedbackState.RECORDING in feedback.states
