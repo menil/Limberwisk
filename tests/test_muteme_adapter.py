@@ -1,5 +1,6 @@
 from support.fake_hid import FakeHidDevice
 
+from muteme_flow.conflict import OFFICIAL_APP_BUNDLE_IDS
 from muteme_flow.hid_worker import DeviceEvent
 from muteme_flow.led import Color, LedMailbox
 from muteme_flow.muteme_adapter import MuteMeInputSource, MuteMeLedSink
@@ -76,6 +77,8 @@ def test_muteme_input_source_conformance():
     source = MuteMeInputSource(connect=lambda: FakeHidDevice(), led_mailbox=mailbox)
     assert isinstance(source, InputSource)
     assert source.name == "MuteMe"
+    assert source.conflicting_bundle_ids == OFFICIAL_APP_BUNDLE_IDS
+    assert "MuteMe" in source.conflicting_app_names
 
 
 def test_muteme_input_source_lifecycle_and_events():
@@ -90,6 +93,12 @@ def test_muteme_input_source_lifecycle_and_events():
         assert source.worker is not None
         assert source.name == "MuteMe"
         assert device_event_to_input_event(DeviceEvent.DOWN) is InputEvent.DOWN
+
+        # Test pause and resume delegating to underlying worker
+        source.pause()
+        assert source.worker._paused.is_set()
+        source.resume()
+        assert not source.worker._paused.is_set()
     finally:
         source.stop()
         assert source.worker is None

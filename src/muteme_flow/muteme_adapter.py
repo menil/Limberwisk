@@ -3,6 +3,7 @@
 import time
 from collections.abc import Callable
 
+from muteme_flow.conflict import OFFICIAL_APP_BUNDLE_IDS, OFFICIAL_APP_NAMES
 from muteme_flow.hid_io import HidDevice
 from muteme_flow.hid_worker import RECONNECT_INTERVAL_S, DeviceEvent, HidWorker
 from muteme_flow.led import Color, LedMailbox
@@ -64,6 +65,14 @@ class MuteMeInputSource(InputSource):
     @property
     def name(self) -> str:
         return "MuteMe"
+
+    @property
+    def conflicting_bundle_ids(self) -> frozenset[str]:
+        return OFFICIAL_APP_BUNDLE_IDS
+
+    @property
+    def conflicting_app_names(self) -> frozenset[str]:
+        return OFFICIAL_APP_NAMES
 
     @property
     def connected_device(self) -> HidDevice | None:

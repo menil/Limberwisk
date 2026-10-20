@@ -36,12 +36,30 @@ class InputSource(Protocol):
         """Human-readable name of the input source."""
         ...
 
+    @property
+    def conflicting_bundle_ids(self) -> frozenset[str]:
+        """Bundle IDs of applications known to conflict with this input source."""
+        ...
+
+    @property
+    def conflicting_app_names(self) -> frozenset[str]:
+        """Process names of apps known to conflict with this input source (fallback)."""
+        ...
+
     def start(self, on_event: InputEventHandler) -> None:
         """Start listening for inputs; invoke `on_event(event)` on state changes."""
         ...
 
     def stop(self) -> None:
         """Stop listening and clean up all resources."""
+        ...
+
+    def pause(self) -> None:
+        """Pause hardware communication and release device handles (e.g. before system sleep)."""
+        ...
+
+    def resume(self) -> None:
+        """Resume hardware communication after a pause (e.g. after system wake)."""
         ...
 
 

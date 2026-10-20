@@ -28,10 +28,24 @@ class DummyInputSource:
     def name(self) -> str:
         return "Dummy Source"
 
+    @property
+    def conflicting_bundle_ids(self) -> frozenset[str]:
+        return frozenset()
+
+    @property
+    def conflicting_app_names(self) -> frozenset[str]:
+        return frozenset()
+
     def start(self, on_event: InputEventHandler) -> None:
         pass
 
     def stop(self) -> None:
+        pass
+
+    def pause(self) -> None:
+        pass
+
+    def resume(self) -> None:
         pass
 
 
@@ -66,8 +80,16 @@ class DummyBackend:
 
 
 def test_input_source_protocol_conformance():
-    assert isinstance(DummyInputSource(), InputSource)
+    source = DummyInputSource()
+    assert isinstance(source, InputSource)
+    assert source.conflicting_bundle_ids == frozenset()
+    assert source.conflicting_app_names == frozenset()
     assert not isinstance(object(), InputSource)
+
+    class IncompleteSource:
+        name = "Incomplete"
+
+    assert not isinstance(IncompleteSource(), InputSource)
 
 
 def test_feedback_sink_protocol_conformance():

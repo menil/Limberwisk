@@ -113,3 +113,34 @@ def test_stop_removes_the_observers():
     harness.monitor.start()
     harness.monitor.stop()
     assert len(harness.center.removed) == 2
+
+
+def test_set_conflicts_clears_conflict_when_target_becomes_empty():
+    harness = Harness([official()])
+    harness.monitor.start()
+    assert harness.changes == [True]
+    assert harness.monitor.running
+
+    # Switch to an input source with no conflicts
+    harness.monitor.set_conflicts(bundle_ids=frozenset(), app_names=frozenset())
+    assert harness.changes == [True, False]
+    assert not harness.monitor.running
+    assert harness.monitor.official_apps() == []
+
+
+def test_set_conflicts_updates_conflict_detection():
+    custom_app = FakeApp("com.vendor.pedalapp", name="PedalApp")
+    harness = Harness([custom_app])
+    harness.monitor.start()
+    # Initially watching MuteMe apps, custom_app is not a conflict
+    assert harness.changes == [False]
+    assert not harness.monitor.running
+
+    # Switch to input source that conflicts with PedalApp
+    harness.monitor.set_conflicts(
+        bundle_ids=frozenset({"com.vendor.pedalapp"}),
+        app_names=frozenset({"PedalApp"}),
+    )
+    assert harness.changes == [False, True]
+    assert harness.monitor.running
+    assert harness.monitor.official_apps() == [custom_app]
