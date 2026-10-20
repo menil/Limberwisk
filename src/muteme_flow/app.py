@@ -39,6 +39,7 @@ from muteme_flow.runtime import Runtime
 from muteme_flow.settings import (
     BACKEND_DISPLAY_NAMES,
     HOLD_THRESHOLD_CHOICES_MS,
+    INPUT_DISPLAY_NAMES,
     Settings,
     UserDefaultsStore,
 )
@@ -99,6 +100,14 @@ class MuteMeFlowApp(rumps.App):
         for row in self._backend_rows.values():
             self._backend_menu.add(row)
 
+        self._input_menu = rumps.MenuItem("Input Device")
+        self._input_rows = {
+            source: rumps.MenuItem(name, callback=self._action(self._input_choice(source)))
+            for source, name in INPUT_DISPLAY_NAMES.items()
+        }
+        for row in self._input_rows.values():
+            self._input_menu.add(row)
+
         self._audio_feedback_row = rumps.MenuItem(
             "Audio Chime Feedback", callback=self._action(self._toggle_audio_feedback)
         )
@@ -116,6 +125,7 @@ class MuteMeFlowApp(rumps.App):
             rumps.MenuItem(MODE_LINE),
             self._threshold_menu,
             self._backend_menu,
+            self._input_menu,
             self._audio_feedback_row,
             None,
             self._login_row,
@@ -139,6 +149,7 @@ class MuteMeFlowApp(rumps.App):
         )
         self._device_row.title = f"Input: {dev_name} ({dev_status})"
         # Hidden rather than removed: rumps keys rows by title, and this row comes and goes.
+        self._conflict_row.title = f"⚠️ Official {dev_name} app is running (click to quit)"
         _set_hidden(self._conflict_row, not self._machine.conflict)
 
         current_threshold = self._settings.hold_threshold_ms
@@ -147,6 +158,10 @@ class MuteMeFlowApp(rumps.App):
 
         for key, row in self._backend_rows.items():
             row.state = _SELECTED if key == current_backend else _UNSELECTED
+
+        current_input = self._settings.input_source
+        for key, row in self._input_rows.items():
+            row.state = _SELECTED if key == current_input else _UNSELECTED
 
         self._audio_feedback_row.state = (
             _SELECTED if self._settings.audio_feedback_enabled else _UNSELECTED
@@ -193,6 +208,19 @@ class MuteMeFlowApp(rumps.App):
 
         return choose
 
+    def _input_choice(self, choice: str) -> Callable[[], None]:
+        """Switch active input device and update persisted settings on change."""
+
+        def choose() -> None:
+            if choice == self._settings.input_source:
+                return
+            if hasattr(self._runtime, "switch_input"):
+                self._runtime.switch_input(choice)
+            self._settings.set_input_source(choice)
+            self.refresh()
+
+        return choose
+
     def _toggle_audio_feedback(self) -> None:
         new_val = not self._settings.audio_feedback_enabled
         self._settings.set_audio_feedback_enabled(new_val)
@@ -224,11 +252,12 @@ class MuteMeFlowApp(rumps.App):
         if not apps:
             self.refresh()
             return
+        dev_name = getattr(self._runtime, "connected_device_name", "MuteMe")
         confirmed = rumps.alert(
-            title="Quit the official MuteMe app?",
+            title=f"Quit the official {dev_name} app?",
             message=(
                 f"{describe_apps(apps)}\n\n"
-                "It competes with MuteMe Flow for the button and resets its light."
+                f"It competes with MuteMe Flow for the button and resets its light."
             ),
             ok="Quit It",
             cancel="Cancel",
@@ -276,9 +305,11 @@ def _run(recent_lines: RecentLines) -> None:
     runtime = Runtime.create_default(
         timings=settings.timings(),
         backend_choice=settings.dictation_backend,
+        input_choice=settings.input_source,
         audio_feedback=settings.audio_feedback_enabled,
     )
     conflict = ConflictMonitor.for_current_app(runtime.controller.conflict_changed)
+    runtime.conflict_monitor = conflict
     app = MuteMeFlowApp(
         runtime=runtime,
         settings=settings,
