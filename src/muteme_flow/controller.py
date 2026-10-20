@@ -12,7 +12,17 @@ from muteme_flow.commands import Command
 from muteme_flow.dispatcher import Completion, DispatchError, UrlDispatcher
 from muteme_flow.hid_worker import DeviceEvent
 from muteme_flow.latency import LatencyRecorder
-from muteme_flow.led import LedMailbox
+from muteme_flow.led import Color, LedMailbox
+from muteme_flow.protocols import (
+    DictationBackend,
+    FeedbackSink,
+    FeedbackState,
+    InputEvent,
+    color_to_feedback_state,
+    command_to_dictation_command,
+    feedback_state_to_color,
+    input_event_to_device_event,
+)
 from muteme_flow.scheduler import Scheduler
 from muteme_flow.state_machine import StateMachine, Timings
 
@@ -23,14 +33,24 @@ class Controller:
     def __init__(
         self,
         *,
-        dispatcher: UrlDispatcher,
-        led: LedMailbox,
+        backend: DictationBackend | None = None,
+        dispatcher: UrlDispatcher | None = None,
+        feedback: FeedbackSink | None = None,
+        led: LedMailbox | None = None,
         scheduler: Scheduler,
         post_to_main: Callable[[Callable[[], None]], None],
         timings: Timings | None = None,
         latency: LatencyRecorder | None = None,
     ) -> None:
+        if backend is None and dispatcher is None:
+            raise ValueError("Either backend or dispatcher must be provided")
+        if feedback is None and led is None:
+            raise ValueError("Either feedback or led must be provided")
+
+        self._backend = backend
         self._dispatcher = dispatcher
+        self._feedback = feedback
+        self._led = led
         self._post_to_main = post_to_main
         # One clock for timestamps taken on the HID thread and for gesture timing on the
         # main thread, so the two can be compared.
@@ -41,7 +61,7 @@ class Controller:
         self._refresh_pending = False
         self.machine = StateMachine(
             send=self._send,
-            set_led=led.request,
+            set_led=self._set_feedback,
             scheduler=scheduler,
             timings=timings,
             on_change=self._schedule_refresh,
@@ -60,13 +80,33 @@ class Controller:
         """Commands handed to the system whose completion has not arrived yet."""
         return self._outstanding
 
-    def on_device_event(self, event: DeviceEvent) -> None:
-        """HID thread. Must return quickly: it only timestamps and posts."""
+    def _set_feedback(self, color_or_state: Color | FeedbackState) -> None:
+        if self._feedback is not None:
+            state = (
+                color_or_state
+                if isinstance(color_or_state, FeedbackState)
+                else color_to_feedback_state(color_or_state)
+            )
+            self._feedback.set_state(state)
+        elif self._led is not None:
+            color = (
+                color_or_state
+                if isinstance(color_or_state, Color)
+                else feedback_state_to_color(color_or_state)
+            )
+            self._led.request(color)
+
+    def on_device_event(self, event: DeviceEvent | InputEvent) -> None:
+        """Input thread. Must return quickly: it only timestamps and posts."""
+        dev_event = input_event_to_device_event(event) if isinstance(event, InputEvent) else event
         received_at = self._now()
-        self._post_to_main(lambda: self._handle(event, received_at))
+        self._post_to_main(lambda: self._handle(dev_event, received_at))
+
+    def backend_running_changed(self, running: bool) -> None:
+        self.machine.wispr_running_changed(running)
 
     def wispr_running_changed(self, running: bool) -> None:
-        self.machine.wispr_running_changed(running)
+        self.backend_running_changed(running)
 
     def conflict_changed(self, conflict: bool) -> None:
         self.machine.set_conflict(conflict)
@@ -112,7 +152,10 @@ class Controller:
             on_complete(error)
 
         try:
-            self._dispatcher.dispatch(command, completed)
+            if self._backend is not None:
+                self._backend.dispatch(command_to_dictation_command(command), completed)
+            elif self._dispatcher is not None:
+                self._dispatcher.dispatch(command, completed)
         except Exception as error:
             # A dispatcher that raises must still end in the failure path, or the state
             # machine would believe a command is in flight forever. Posted rather than
