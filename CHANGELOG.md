@@ -3,6 +3,19 @@
 All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.3.0](https://github.com/menil/wisprflow-muteme-bridge/compare/v0.2.0...v0.3.0) (2026-10-21)
+
+
+### Features
+
+* add backend and audio feedback options to settings and menu ([9896434](https://github.com/menil/wisprflow-muteme-bridge/commit/98964349eb9d91136e0031d4869a1b0f8e94632f))
+* decouple Controller to coordinate abstract inputs and backends ([4ef2323](https://github.com/menil/wisprflow-muteme-bridge/commit/4ef23231729d98518673c4c4cada1ed8f3d8c144))
+* define core protocols for pluggable inputs and dictation targets ([9e52bc3](https://github.com/menil/wisprflow-muteme-bridge/commit/9e52bc3e37697303593447050ff5be49e4fa66d4))
+* extract MuteMe input worker and LED sink into adapter ([f371628](https://github.com/menil/wisprflow-muteme-bridge/commit/f371628b410ee8d68334be4349f0845d0396bb3e))
+* extract Wispr Flow dispatcher and presence into adapter ([32e29cb](https://github.com/menil/wisprflow-muteme-bridge/commit/32e29cba38297fd09f2569828c9ac76e060e6337))
+* implement EnviousWispr dictation backend adapter ([0b8dc93](https://github.com/menil/wisprflow-muteme-bridge/commit/0b8dc9307f8dac0da144423281f88054189fcbaf))
+* implement NullFeedbackSink and AudioFeedbackSink ([e1b3990](https://github.com/menil/wisprflow-muteme-bridge/commit/e1b3990af3edfbea5700a9aed209a491a61334cd))
+
 ## [0.2.0](https://github.com/menil/limberwisk/compare/v0.1.0...v0.2.0) (2026-10-19)
 
 
