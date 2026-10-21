@@ -4,7 +4,7 @@ import time
 from collections.abc import Callable
 from typing import Any, Protocol
 
-from muteme_flow.guarded import guarded
+from limberwisk.guarded import guarded
 
 
 class TimerHandle(Protocol):

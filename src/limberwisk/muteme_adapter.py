@@ -3,10 +3,10 @@
 import time
 from collections.abc import Callable
 
-from muteme_flow.hid_io import HidDevice
-from muteme_flow.hid_worker import RECONNECT_INTERVAL_S, DeviceEvent, HidWorker
-from muteme_flow.led import Color, LedMailbox
-from muteme_flow.protocols import (
+from limberwisk.hid_io import HidDevice
+from limberwisk.hid_worker import RECONNECT_INTERVAL_S, DeviceEvent, HidWorker
+from limberwisk.led import Color, LedMailbox
+from limberwisk.protocols import (
     FeedbackSink,
     FeedbackState,
     InputEventHandler,

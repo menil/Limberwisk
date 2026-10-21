@@ -13,6 +13,6 @@ pkgs.mkShell {
   ];
 
   shellHook = ''
-    echo "❄️ MuteMe Flow dev shell"
+    echo "❄️ Limberwisk dev shell"
   '';
 }

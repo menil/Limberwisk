@@ -10,7 +10,7 @@ import logging
 
 from PyObjCTools import AppHelper
 
-from muteme_flow.runtime import Runtime
+from limberwisk.runtime import Runtime
 
 
 def main() -> None:

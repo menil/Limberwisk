@@ -4,11 +4,11 @@ import time
 from collections.abc import Callable
 from typing import Any, Protocol
 
-from muteme_flow.controller import Controller
-from muteme_flow.devices import DeviceId
-from muteme_flow.hid_worker import HidWorker
-from muteme_flow.protocols import FeedbackSink
-from muteme_flow.state_machine import Timings
+from limberwisk.controller import Controller
+from limberwisk.devices import DeviceId
+from limberwisk.hid_worker import HidWorker
+from limberwisk.protocols import FeedbackSink
+from limberwisk.state_machine import Timings
 
 # Longest wait at quit for the final stop command to be handed to the system.
 SHUTDOWN_DRAIN_S = 0.5
@@ -92,10 +92,10 @@ class Runtime:
             backend, presence = self._backend_factory(backend_choice)
             self._presence = presence
         else:
-            from muteme_flow.envious_wispr_adapter import EnviousWisprBackend
-            from muteme_flow.main_thread import post_to_main
-            from muteme_flow.wispr_adapter import WisprFlowBackend
-            from muteme_flow.wispr_presence import WisprPresence
+            from limberwisk.envious_wispr_adapter import EnviousWisprBackend
+            from limberwisk.main_thread import post_to_main
+            from limberwisk.wispr_adapter import WisprFlowBackend
+            from limberwisk.wispr_presence import WisprPresence
 
             backend = (
                 EnviousWisprBackend.for_current_app(post_to_main)
@@ -134,16 +134,16 @@ class Runtime:
             backend_choice: Initial active dictation engine ('wispr-flow' or 'envious-wispr').
             audio_feedback: Whether audio chime feedback is initially enabled.
         """
-        from muteme_flow.envious_wispr_adapter import EnviousWisprBackend
-        from muteme_flow.feedback_sinks import AudioFeedbackSink, CompositeFeedbackSink
-        from muteme_flow.hidapi_device import open_first_known, preload_hidapi
-        from muteme_flow.led import LedMailbox
-        from muteme_flow.main_thread import post_to_main
-        from muteme_flow.muteme_adapter import MuteMeLedSink
-        from muteme_flow.power import PowerObserver
-        from muteme_flow.scheduler import NSTimerScheduler
-        from muteme_flow.wispr_adapter import WisprFlowBackend
-        from muteme_flow.wispr_presence import WisprPresence
+        from limberwisk.envious_wispr_adapter import EnviousWisprBackend
+        from limberwisk.feedback_sinks import AudioFeedbackSink, CompositeFeedbackSink
+        from limberwisk.hidapi_device import open_first_known, preload_hidapi
+        from limberwisk.led import LedMailbox
+        from limberwisk.main_thread import post_to_main
+        from limberwisk.muteme_adapter import MuteMeLedSink
+        from limberwisk.power import PowerObserver
+        from limberwisk.scheduler import NSTimerScheduler
+        from limberwisk.wispr_adapter import WisprFlowBackend
+        from limberwisk.wispr_presence import WisprPresence
 
         # hidapi must be imported on the main thread (specs/spec.md section 4.6).
         preload_hidapi()

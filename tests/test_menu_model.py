@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from muteme_flow.menu_model import (
+from limberwisk.menu_model import (
     CONFLICT_TITLE,
     MENU_TITLE,
     menu_title,

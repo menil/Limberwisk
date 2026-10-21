@@ -3,7 +3,7 @@
 from collections.abc import Callable
 from typing import Any
 
-from muteme_flow.guarded import guarded
+from limberwisk.guarded import guarded
 
 LAUNCH_NOTIFICATION = "NSWorkspaceDidLaunchApplicationNotification"
 TERMINATE_NOTIFICATION = "NSWorkspaceDidTerminateApplicationNotification"

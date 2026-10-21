@@ -2,10 +2,10 @@
 # Submit a signed app or DMG to Apple's notary service, wait, staple the ticket, and check
 # that Gatekeeper now accepts it.
 #
-#   NOTARY_PROFILE=muteme-flow scripts/notarize.sh "dist/MuteMe Flow.app"
+#   NOTARY_PROFILE=limberwisk scripts/notarize.sh "dist/Limberwisk.app"
 #
 # NOTARY_PROFILE names a keychain profile created once with:
-#   xcrun notarytool store-credentials muteme-flow --apple-id ... --team-id ... --password ...
+#   xcrun notarytool store-credentials limberwisk --apple-id ... --team-id ... --password ...
 # NOTARY_KEYCHAIN (optional) is the keychain that profile lives in.
 set -euo pipefail
 

@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 
-from muteme_flow.notifications import Subscriptions
+from limberwisk.notifications import Subscriptions
 
 WILL_SLEEP_NOTIFICATION = "NSWorkspaceWillSleepNotification"
 DID_WAKE_NOTIFICATION = "NSWorkspaceDidWakeNotification"

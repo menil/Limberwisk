@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from muteme_flow.menu_model import status_text
-from muteme_flow.settings import HOLD_THRESHOLD_CHOICES_MS
+from limberwisk.menu_model import status_text
+from limberwisk.settings import HOLD_THRESHOLD_CHOICES_MS
 
 ROOT = Path(__file__).resolve().parent.parent
 DOCS = [ROOT / "README.md", ROOT / "specs" / "spec.md", *sorted((ROOT / "docs").glob("*.md"))]
@@ -139,4 +139,4 @@ def test_the_bug_report_form_asks_for_the_diagnostics_the_menu_copies():
     assert diagnostics["validations"]["required"] is True
     assert "Copy Diagnostics" in diagnostics["attributes"]["description"]
     # The menu item the form names must exist under that name.
-    assert '"Copy Diagnostics"' in (ROOT / "src" / "muteme_flow" / "app.py").read_text()
+    assert '"Copy Diagnostics"' in (ROOT / "src" / "limberwisk" / "app.py").read_text()

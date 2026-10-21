@@ -5,8 +5,9 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from muteme_flow import __version__
-from muteme_flow.devices import DeviceId
+from limberwisk import __version__
+from limberwisk.app_info import APP_NAME
+from limberwisk.devices import DeviceId
 
 
 @dataclass(frozen=True)
@@ -27,7 +28,7 @@ def describe_device(device: DeviceId | None) -> str:
 
 def format_diagnostics(info: DiagnosticsInfo, log_lines: Sequence[str]) -> str:
     header = [
-        f"MuteMe Flow {info.app_version}",
+        f"{APP_NAME} {info.app_version}",
         f"macOS {info.macos_version}",
         f"Wispr Flow {info.wispr_version or 'not found'}",
         f"Device: {describe_device(info.device)}",
@@ -53,7 +54,7 @@ def collect_info(status: str, device: DeviceId | None) -> DiagnosticsInfo:
     from AppKit import NSWorkspace
     from Foundation import NSBundle
 
-    from muteme_flow.commands import WISPR_BUNDLE_ID
+    from limberwisk.commands import WISPR_BUNDLE_ID
 
     return DiagnosticsInfo(
         app_version=__version__,

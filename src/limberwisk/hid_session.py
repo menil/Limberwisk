@@ -3,9 +3,9 @@
 import time
 from collections.abc import Callable
 
-from muteme_flow.decoder import Edge, EdgeDecoder
-from muteme_flow.hid_io import DeviceError, HidDevice
-from muteme_flow.led import LedMailbox, led_report
+from limberwisk.decoder import Edge, EdgeDecoder
+from limberwisk.hid_io import DeviceError, HidDevice
+from limberwisk.led import LedMailbox, led_report
 
 REPORT_BUFFER_SIZE = 64
 # How long a read waits when the device is silent. It bounds how late an LED change can be

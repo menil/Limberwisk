@@ -4,9 +4,9 @@ import threading
 import pytest
 from support.fake_hid_module import FakeHidModule, FakeRawDevice
 
-from muteme_flow import hidapi_device
-from muteme_flow.hid_io import DeviceError, DeviceNotFoundError, HidDevice
-from muteme_flow.hidapi_device import HidapiDevice, open_first_known
+from limberwisk import hidapi_device
+from limberwisk.hid_io import DeviceError, DeviceNotFoundError, HidDevice
+from limberwisk.hidapi_device import HidapiDevice, open_first_known
 
 ORIGINAL = {"vendor_id": 0x3603, "product_id": 0x0001}
 UNRELATED = {"vendor_id": 0x0BDA, "product_id": 0x1100}

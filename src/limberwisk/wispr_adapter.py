@@ -3,15 +3,15 @@
 from collections.abc import Callable
 from typing import Any
 
-from muteme_flow.commands import WISPR_BUNDLE_ID, Command
-from muteme_flow.dispatcher import NSWorkspaceDispatcher, UrlDispatcher
-from muteme_flow.protocols import (
+from limberwisk.commands import WISPR_BUNDLE_ID, Command
+from limberwisk.dispatcher import NSWorkspaceDispatcher, UrlDispatcher
+from limberwisk.protocols import (
     DictationBackend,
     DictationCommand,
     DictationCompletion,
     dictation_command_to_command,
 )
-from muteme_flow.wispr_presence import WisprPresence
+from limberwisk.wispr_presence import WisprPresence
 
 
 class WisprFlowBackend(DictationBackend):

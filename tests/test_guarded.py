@@ -1,6 +1,6 @@
 import logging
 
-from muteme_flow.guarded import guarded
+from limberwisk.guarded import guarded
 
 
 def test_calls_through_with_its_arguments():

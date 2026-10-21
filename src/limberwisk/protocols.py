@@ -9,9 +9,9 @@ from collections.abc import Callable
 from enum import Enum, auto
 from typing import Protocol, runtime_checkable
 
-from muteme_flow.commands import Command
-from muteme_flow.hid_worker import DeviceEvent
-from muteme_flow.led import Color
+from limberwisk.commands import Command
+from limberwisk.hid_worker import DeviceEvent
+from limberwisk.led import Color
 
 
 class InputEvent(Enum):

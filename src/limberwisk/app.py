@@ -20,14 +20,14 @@ from AppKit import (
 )
 from Foundation import NSNotificationCenter
 
-from muteme_flow.app_info import APP_NAME, DOCUMENTATION_URL
-from muteme_flow.conflict import ConflictMonitor, describe_apps
-from muteme_flow.diagnostics import collect_info, format_diagnostics
-from muteme_flow.guarded import guarded
-from muteme_flow.logging_setup import RecentLines, configure_logging
-from muteme_flow.login_item import LoginItem
-from muteme_flow.main_thread import post_to_main
-from muteme_flow.menu_model import (
+from limberwisk.app_info import APP_NAME, DOCUMENTATION_URL
+from limberwisk.conflict import ConflictMonitor, describe_apps
+from limberwisk.diagnostics import collect_info, format_diagnostics
+from limberwisk.guarded import guarded
+from limberwisk.logging_setup import RecentLines, configure_logging
+from limberwisk.login_item import LoginItem
+from limberwisk.main_thread import post_to_main
+from limberwisk.menu_model import (
     CONFLICT_ITEM,
     MENU_TITLE,
     MODE_LINE,
@@ -35,14 +35,14 @@ from muteme_flow.menu_model import (
     status_message,
     status_text,
 )
-from muteme_flow.runtime import Runtime
-from muteme_flow.settings import (
+from limberwisk.runtime import Runtime
+from limberwisk.settings import (
     BACKEND_DISPLAY_NAMES,
     HOLD_THRESHOLD_CHOICES_MS,
     Settings,
     UserDefaultsStore,
 )
-from muteme_flow.termination import install_termination_handlers, keep_interpreter_responsive
+from limberwisk.termination import install_termination_handlers, keep_interpreter_responsive
 
 log = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ def _set_hidden(item: rumps.MenuItem, hidden: bool) -> None:
     item._menuitem.setHidden_(hidden)
 
 
-class MuteMeFlowApp(rumps.App):
+class LimberwiskApp(rumps.App):
     def __init__(
         self,
         *,
@@ -228,7 +228,7 @@ class MuteMeFlowApp(rumps.App):
             title="Quit the official MuteMe app?",
             message=(
                 f"{describe_apps(apps)}\n\n"
-                "It competes with MuteMe Flow for the button and resets its light."
+                f"It competes with {APP_NAME} for the button and resets its light."
             ),
             ok="Quit It",
             cancel="Cancel",
@@ -253,6 +253,11 @@ class MuteMeFlowApp(rumps.App):
         webbrowser.open(DOCUMENTATION_URL)
 
 
+# Backward compatibility alias for existing scripts or callers importing the old app class.
+# TODO(v1.0): Remove deprecated alias after 1.0.0 release.
+MuteMeFlowApp = LimberwiskApp
+
+
 def _log_uncaught(exc_type: type[BaseException], exc: BaseException, tb: Any) -> None:
     log.critical("uncaught exception", exc_info=(exc_type, exc, tb))
 
@@ -264,7 +269,7 @@ def run() -> None:
     try:
         _run(recent_lines)
     except Exception:
-        log.exception("MuteMe Flow failed to start")
+        log.exception(f"{APP_NAME} failed to start")
         raise
 
 
@@ -279,7 +284,7 @@ def _run(recent_lines: RecentLines) -> None:
         audio_feedback=settings.audio_feedback_enabled,
     )
     conflict = ConflictMonitor.for_current_app(runtime.controller.conflict_changed)
-    app = MuteMeFlowApp(
+    app = LimberwiskApp(
         runtime=runtime,
         settings=settings,
         login_item=LoginItem.for_current_app(),

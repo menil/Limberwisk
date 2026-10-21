@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build "MuteMe Flow.app" into dist/ as a universal2 (arm64 + x86_64) bundle.
+# Build "Limberwisk.app" into dist/ as a universal2 (arm64 + x86_64) bundle.
 #
 #   scripts/build_app.sh                          # ad-hoc signed, for local use and testing
 #   SIGN_IDENTITY="Developer ID Application: ..." scripts/build_app.sh
@@ -19,7 +19,7 @@ clean_env() { env -i HOME="$HOME" PATH="$CLEAN_PATH" "$@"; }
 
 # Must match the exact pin in pyproject.toml (tests/test_packaging.py checks this).
 HIDAPI_VERSION="0.15.0"
-APP="dist/MuteMe Flow.app"
+APP="dist/Limberwisk.app"
 
 is_universal() {
   case "$1" in

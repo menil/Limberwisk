@@ -47,7 +47,7 @@ class LedMailbox:
         FeedbackState is the preferred semantic representation for decoupled
         feedback sinks. Color is supported for direct/legacy callers.
         """
-        from muteme_flow.protocols import FeedbackState, feedback_state_to_color
+        from limberwisk.protocols import FeedbackState, feedback_state_to_color
 
         if isinstance(state, FeedbackState):
             self.request(feedback_state_to_color(state))

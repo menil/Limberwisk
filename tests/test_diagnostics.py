@@ -1,6 +1,6 @@
-from muteme_flow import __version__
-from muteme_flow.devices import KNOWN_DEVICES
-from muteme_flow.diagnostics import (
+from limberwisk import __version__
+from limberwisk.devices import KNOWN_DEVICES
+from limberwisk.diagnostics import (
     DiagnosticsInfo,
     describe_device,
     format_diagnostics,
@@ -24,7 +24,7 @@ def info(**overrides):
 
 def test_the_report_names_every_version_the_device_and_the_status():
     text = format_diagnostics(info(), ["line one", "line two"])
-    assert f"MuteMe Flow {__version__}" in text
+    assert f"Limberwisk {__version__}" in text
     assert "macOS 15.1" in text
     assert "Wispr Flow 1.6.1174" in text
     assert "Device: MuteMe Original 0x3603:0x0001 (verified)" in text

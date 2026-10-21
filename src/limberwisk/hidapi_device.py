@@ -6,8 +6,8 @@ import threading
 from types import ModuleType
 from typing import Any
 
-from muteme_flow import devices
-from muteme_flow.hid_io import DeviceError, DeviceNotFoundError
+from limberwisk import devices
+from limberwisk.hid_io import DeviceError, DeviceNotFoundError
 
 
 def _load_hid() -> ModuleType:

@@ -4,11 +4,11 @@ import pytest
 from support.clock import FakeClock
 from support.fake_scheduler import FakeScheduler
 
-from muteme_flow.commands import Command
-from muteme_flow.controller import Controller
-from muteme_flow.hid_worker import DeviceEvent
-from muteme_flow.led import Color, LedMailbox
-from muteme_flow.state_machine import State
+from limberwisk.commands import Command
+from limberwisk.controller import Controller
+from limberwisk.hid_worker import DeviceEvent
+from limberwisk.led import Color, LedMailbox
+from limberwisk.state_machine import State
 
 
 class Rig:
@@ -229,7 +229,7 @@ def test_controller_requires_feedback_or_led():
 
 
 def test_controller_with_backend_and_feedback_protocols():
-    from muteme_flow.protocols import (
+    from limberwisk.protocols import (
         DictationCommand,
         FeedbackState,
         InputEvent,

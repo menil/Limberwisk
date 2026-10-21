@@ -8,8 +8,8 @@ from setuptools import setup
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from muteme_flow.app_info import APP_NAME  # noqa: E402
-from muteme_flow.bundle_info import info_plist  # noqa: E402
+from limberwisk.app_info import APP_NAME  # noqa: E402
+from limberwisk.bundle_info import info_plist  # noqa: E402
 
 setup(
     name=APP_NAME,
@@ -20,7 +20,7 @@ setup(
             # Only real packages belong here. `hid` is a single-file extension module: listed
             # as a package, py2app copies its binary into a hid.py that shadows the real
             # module and fails with "source code string cannot contain null bytes".
-            "packages": ["muteme_flow", "rumps"],
+            "packages": ["limberwisk", "rumps"],
             # Imported lazily inside functions, which the dependency scan can miss.
             "includes": [
                 "hid",

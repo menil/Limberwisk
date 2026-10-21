@@ -3,7 +3,7 @@
 from collections.abc import Callable
 from typing import Any, Protocol
 
-from muteme_flow.commands import WISPR_BUNDLE_ID, Command
+from limberwisk.commands import WISPR_BUNDLE_ID, Command
 
 Completion = Callable[[Exception | None], None]
 

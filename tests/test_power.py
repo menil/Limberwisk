@@ -1,7 +1,7 @@
 from support.fake_appkit import FakeNotificationCenter
 
-from muteme_flow.notifications import Subscriptions
-from muteme_flow.power import DID_WAKE_NOTIFICATION, WILL_SLEEP_NOTIFICATION, PowerObserver
+from limberwisk.notifications import Subscriptions
+from limberwisk.power import DID_WAKE_NOTIFICATION, WILL_SLEEP_NOTIFICATION, PowerObserver
 
 MAIN_QUEUE = object()
 

@@ -4,8 +4,8 @@ import logging
 from collections.abc import Callable, Sequence
 from typing import Any
 
-from muteme_flow.app_info import APP_BUNDLE_ID
-from muteme_flow.notifications import LAUNCH_NOTIFICATION, TERMINATE_NOTIFICATION, Subscriptions
+from limberwisk.app_info import APP_BUNDLE_ID
+from limberwisk.notifications import LAUNCH_NOTIFICATION, TERMINATE_NOTIFICATION, Subscriptions
 
 log = logging.getLogger(__name__)
 

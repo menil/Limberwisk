@@ -2,7 +2,7 @@ import logging
 
 from support.fake_appkit import FakeNotificationCenter
 
-from muteme_flow.notifications import Subscriptions
+from limberwisk.notifications import Subscriptions
 
 QUEUE = object()
 

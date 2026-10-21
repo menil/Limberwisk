@@ -1,8 +1,8 @@
 from support.fake_appkit import FakeApp, FakeNotification, FakeNotificationCenter
 
-from muteme_flow.commands import WISPR_BUNDLE_ID
-from muteme_flow.notifications import Subscriptions
-from muteme_flow.wispr_presence import LAUNCH_NOTIFICATION, TERMINATE_NOTIFICATION, WisprPresence
+from limberwisk.commands import WISPR_BUNDLE_ID
+from limberwisk.notifications import Subscriptions
+from limberwisk.wispr_presence import LAUNCH_NOTIFICATION, TERMINATE_NOTIFICATION, WisprPresence
 
 MAIN_QUEUE = object()
 

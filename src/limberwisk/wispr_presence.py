@@ -3,8 +3,8 @@
 from collections.abc import Callable, Sequence
 from typing import Any
 
-from muteme_flow.commands import WISPR_BUNDLE_ID
-from muteme_flow.notifications import LAUNCH_NOTIFICATION, TERMINATE_NOTIFICATION, Subscriptions
+from limberwisk.commands import WISPR_BUNDLE_ID
+from limberwisk.notifications import LAUNCH_NOTIFICATION, TERMINATE_NOTIFICATION, Subscriptions
 
 _APPLICATION_KEY = "NSWorkspaceApplicationKey"
 

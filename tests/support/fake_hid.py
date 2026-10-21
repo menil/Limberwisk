@@ -4,8 +4,8 @@ import threading
 import time
 from collections import deque
 
-from muteme_flow.devices import MUTEME_ORIGINAL_PID, MUTEME_VID
-from muteme_flow.hid_io import DeviceError
+from limberwisk.devices import MUTEME_ORIGINAL_PID, MUTEME_VID
+from limberwisk.hid_io import DeviceError
 
 
 class FakeHidDevice:

@@ -2,7 +2,7 @@
 
 from typing import Any, Protocol
 
-from muteme_flow.state_machine import Timings
+from limberwisk.state_machine import Timings
 
 HOLD_THRESHOLD_CHOICES_MS = (250, 350, 500)
 DEFAULT_HOLD_THRESHOLD_MS = 350
