@@ -2,10 +2,10 @@ from collections.abc import Callable
 
 import pytest
 
-from muteme_flow.commands import Command
-from muteme_flow.hid_worker import DeviceEvent
-from muteme_flow.led import Color
-from muteme_flow.protocols import (
+from limberwisk.commands import Command
+from limberwisk.hid_worker import DeviceEvent
+from limberwisk.led import Color
+from limberwisk.protocols import (
     DictationBackend,
     DictationCommand,
     DictationCompletion,

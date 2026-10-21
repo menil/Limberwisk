@@ -1,9 +1,9 @@
-from muteme_flow.commands import WISPR_BUNDLE_ID, Command
-from muteme_flow.protocols import (
+from limberwisk.commands import WISPR_BUNDLE_ID, Command
+from limberwisk.protocols import (
     DictationBackend,
     DictationCommand,
 )
-from muteme_flow.wispr_adapter import WisprFlowBackend
+from limberwisk.wispr_adapter import WisprFlowBackend
 
 
 class FakeDispatcher:

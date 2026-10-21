@@ -1,7 +1,7 @@
 #!/bin/bash
 # Sign an app with a Developer ID certificate and the hardened runtime, then verify it.
 #
-#   SIGN_IDENTITY="Developer ID Application: Name (TEAMID)" scripts/sign_app.sh "dist/MuteMe Flow.app"
+#   SIGN_IDENTITY="Developer ID Application: Name (TEAMID)" scripts/sign_app.sh "dist/Limberwisk.app"
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

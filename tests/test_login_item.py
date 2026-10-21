@@ -1,5 +1,5 @@
-from muteme_flow.app_info import APP_BUNDLE_ID
-from muteme_flow.login_item import LoginItem
+from limberwisk.app_info import APP_BUNDLE_ID
+from limberwisk.login_item import LoginItem
 
 
 class FakeService:

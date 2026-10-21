@@ -1,7 +1,7 @@
 import pytest
 from support.clock import FakeClock
 
-from muteme_flow.latency import LatencyRecorder
+from limberwisk.latency import LatencyRecorder
 
 
 @pytest.fixture

@@ -2,7 +2,7 @@
 
 Everything the automated tests cannot check: it needs the real device, a person, or a
 second Mac. Record results in `specs/spec.md` section 10.1 (the spike log), and tick the
-matching Beads tasks. Run from source (`.venv/bin/python -m muteme_flow`) unless a step says
+matching Beads tasks. Run from source (`.venv/bin/python -m limberwisk`) unless a step says
 "packaged app".
 
 Wispr Flow must be running, the official MuteMe app quit, and a MuteMe plugged in.
@@ -63,7 +63,7 @@ section 4) is revised before anything else is trusted.
       launching it turns the menu bar item to `🎙️⚠️`, the LED yellow, and shows the quit
       row; clicking it names the app and quits it. Then read its bundle identifier
       (`osascript -e 'id of app "MuteMe"'`) and put it in `OFFICIAL_APP_BUNDLE_IDS`
-      (`src/muteme_flow/conflict.py`)
+      (`src/limberwisk/conflict.py`)
 
 ## 5. The packaged app and installer
 
@@ -86,7 +86,7 @@ Already measured without a person (see spec section 10.1); re-run before a relea
 
 ```bash
 .venv/bin/python scripts/measure_latency.py --taps 100 --holds 10    # software path, gate p95 <= 50 ms
-.venv/bin/python scripts/measure_idle.py "dist/MuteMe Flow.app"         # idle memory and CPU, informational
+.venv/bin/python scripts/measure_idle.py "dist/Limberwisk.app"         # idle memory and CPU, informational
 ```
 
 Need a person:

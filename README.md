@@ -1,4 +1,4 @@
-# MuteMe Flow
+# Limberwisk
 
 A lightweight macOS menu bar app that turns a [**MuteMe**](https://muteme.com) USB button into
 a push-to-talk / tap-to-toggle control for [**Wispr Flow**](https://wisprflow.ai) dictation,
@@ -6,7 +6,7 @@ with the button's light showing whether you are dictating.
 
 ![A MuteMe button glowing green next to a laptop showing a dictation window, above four buttons showing what each light colour means: red is idle, green is dictating, blue means Wispr Flow is not running, and yellow means something needs attention.](docs/images/hero.svg)
 
-> MuteMe Flow is an independent open-source project and is not affiliated with,
+> Limberwisk is an independent open-source project and is not affiliated with,
 > endorsed by, or sponsored by MuteMe or Wispr Flow.
 
 ## Using it
@@ -22,7 +22,7 @@ with the button's light showing whether you are dictating.
 | Blue | Wispr Flow is not running (touching the button does nothing) |
 | Yellow | A problem: see the menu bar item, which says which (below) |
 
-The light is best-effort: MuteMe Flow cannot read Wispr Flow's real state, so if you start or
+The light is best-effort: Limberwisk cannot read Wispr Flow's real state, so if you start or
 stop dictation another way the light can lag until the next touch.
 
 The menu bar item (a microphone) shows the status (for example `Status: Ready (MuteMe
@@ -32,19 +32,19 @@ open the help page, and quit. It has no Dock icon.
 
 ## Installing
 
-Download [**MuteMe-Flow.dmg**](https://github.com/menil/wisprflow-muteme-bridge/releases/latest/download/MuteMe-Flow.dmg),
+Download [**Limberwisk.dmg**](https://github.com/menil/limberwisk/releases/latest/download/Limberwisk.dmg),
 the latest release (older versions are on the
-[Releases page](https://github.com/menil/wisprflow-muteme-bridge/releases)). You can also
+[Releases page](https://github.com/menil/limberwisk/releases)). You can also
 [build it yourself](docs/releasing.md#building-locally); the DMG is written to `dist/`.
 
-1. Open the DMG and drag **MuteMe Flow** to Applications.
+1. Open the DMG and drag **Limberwisk** to Applications.
 2. A release that is not notarized (see the release notes) is refused by macOS the first
    time. On macOS 15 and later, try to open it, then go to **System Settings > Privacy &
    Security** and choose **Open Anyway**. On macOS 13 and 14, right-click the app and choose
    Open. Either way you are overriding Gatekeeper for an app that Apple has not checked,
    so only do it for a copy you trust.
 3. Quit the official MuteMe app if it is running: it competes for the button and resets the
-   light. MuteMe Flow notices and offers to quit it for you.
+   light. Limberwisk notices and offers to quit it for you.
 
 Requires macOS 13 or later and [Wispr Flow](https://wisprflow.ai).
 
@@ -56,12 +56,12 @@ Requires macOS 13 or later and [Wispr Flow](https://wisprflow.ai).
 | `Status: Wispr Flow not running` | Start Wispr Flow. Touches are ignored until then, on purpose, so the button never launches it |
 | `Status: Official MuteMe app is running` | Click the warning row to quit it, or quit it yourself |
 | `Status: Cannot open device` | Another program holds the button. Quit the official MuteMe app first |
-| `Status: Wispr command failed` | MuteMe Flow could not reach Wispr Flow; check that it is installed and running |
+| `Status: Wispr command failed` | Limberwisk could not reach Wispr Flow; check that it is installed and running |
 | `Start at Login (installed app only)` is greyed out | It can only be turned on in the installed app, not when run from source |
 
 **Still stuck?** Choose **Copy Diagnostics** from the menu and paste the result into an issue.
 It contains versions, the device model and recent log lines (with your home folder removed),
-and never audio or dictated text. The full log is in `~/Library/Logs/MuteMe Flow/`.
+and never audio or dictated text. The full log is in `~/Library/Logs/Limberwisk/`.
 
 ## Supported devices
 
@@ -88,7 +88,7 @@ To run against real hardware, set up the virtual environment described in
 [`docs/releasing.md`](docs/releasing.md), then:
 
 ```bash
-.venv/bin/python -m muteme_flow                  # the menu bar app
+.venv/bin/python -m limberwisk                  # the menu bar app
 .venv/bin/pytest tests/test_appkit_contract.py   # checks the real macOS APIs (needs PyObjC)
 ```
 

@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 
-from muteme_flow.guarded import guarded
+from limberwisk.guarded import guarded
 
 
 def post_to_main(fn: Callable[[], None]) -> None:

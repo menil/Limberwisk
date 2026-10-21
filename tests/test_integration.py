@@ -9,13 +9,13 @@ from support.fake_scheduler import FakeScheduler
 from support.main_loop import ManualMainLoop
 from support.waiting import wait_until
 
-from muteme_flow.commands import Command
-from muteme_flow.controller import Controller
-from muteme_flow.hid_io import DeviceError, DeviceNotFoundError
-from muteme_flow.hid_worker import HidWorker
-from muteme_flow.led import Color, LedMailbox, led_report
-from muteme_flow.runtime import Runtime
-from muteme_flow.state_machine import ERROR_FLASH_S, State, Timings
+from limberwisk.commands import Command
+from limberwisk.controller import Controller
+from limberwisk.hid_io import DeviceError, DeviceNotFoundError
+from limberwisk.hid_worker import HidWorker
+from limberwisk.led import Color, LedMailbox, led_report
+from limberwisk.runtime import Runtime
+from limberwisk.state_machine import ERROR_FLASH_S, State, Timings
 
 HOLD = Timings().hold_s
 
@@ -278,7 +278,7 @@ def test_the_worker_is_stopped_even_if_an_earlier_stop_step_fails():
 
 
 def test_the_connected_model_is_available_for_diagnostics():
-    from muteme_flow.devices import DeviceId
+    from limberwisk.devices import DeviceId
 
     s = System()
     runtime = s.make_runtime()

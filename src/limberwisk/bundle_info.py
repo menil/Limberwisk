@@ -6,8 +6,8 @@ when the running bundle's identifier equals `APP_BUNDLE_ID`, so the two must nev
 
 from typing import Any
 
-from muteme_flow import __version__
-from muteme_flow.app_info import APP_BUNDLE_ID, APP_NAME
+from limberwisk import __version__
+from limberwisk.app_info import APP_BUNDLE_ID, APP_NAME
 
 # SMAppService (Start at Login) needs macOS 13.
 MINIMUM_MACOS = "13.0"

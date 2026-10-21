@@ -5,13 +5,13 @@ from collections.abc import Callable
 from enum import Enum
 from typing import Any
 
-from muteme_flow.dispatcher import NSWorkspaceDispatcher, UrlDispatcher
-from muteme_flow.protocols import (
+from limberwisk.dispatcher import NSWorkspaceDispatcher, UrlDispatcher
+from limberwisk.protocols import (
     DictationBackend,
     DictationCommand,
     DictationCompletion,
 )
-from muteme_flow.wispr_presence import WisprPresence
+from limberwisk.wispr_presence import WisprPresence
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ class EnviousWisprCommand(Enum):
     def url(self) -> str:
         """Deep-link command URL string.
 
-        Preserves duck-typing compatibility with muteme_flow.commands.Command.
+        Preserves duck-typing compatibility with limberwisk.commands.Command.
         """
         return self.value
 

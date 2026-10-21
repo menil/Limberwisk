@@ -1,6 +1,6 @@
 import signal
 
-from muteme_flow.termination import install_termination_handlers
+from limberwisk.termination import install_termination_handlers
 
 
 class FakeSignalModule:

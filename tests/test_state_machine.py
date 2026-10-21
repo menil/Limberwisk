@@ -1,9 +1,9 @@
 import pytest
 from support.fake_scheduler import FakeScheduler
 
-from muteme_flow.commands import Command
-from muteme_flow.led import Color
-from muteme_flow.state_machine import (
+from limberwisk.commands import Command
+from limberwisk.led import Color
+from limberwisk.state_machine import (
     ERROR_FLASH_S,
     PERSISTENT_FAILURES,
     State,

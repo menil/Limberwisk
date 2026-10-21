@@ -1,8 +1,8 @@
 import pytest
 from support.fake_appkit import FakeConfiguration, FakeWorkspace
 
-from muteme_flow.commands import Command
-from muteme_flow.dispatcher import WISPR_BUNDLE_ID, DispatchError, NSWorkspaceDispatcher
+from limberwisk.commands import Command
+from limberwisk.dispatcher import WISPR_BUNDLE_ID, DispatchError, NSWorkspaceDispatcher
 
 
 class Rig:

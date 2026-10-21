@@ -19,8 +19,8 @@ from pathlib import Path
 import pytest
 import yaml
 
-from muteme_flow import __version__
-from muteme_flow.bundle_info import MINIMUM_MACOS, info_plist
+from limberwisk import __version__
+from limberwisk.bundle_info import MINIMUM_MACOS, info_plist
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = sorted((ROOT / "scripts").glob("*.sh"))
@@ -76,13 +76,13 @@ def test_hid_is_included_as_a_module_not_listed_as_a_package():
 def third_party_imports() -> set[str]:
     """Top-level third-party modules imported anywhere in the package, even inside functions."""
     found = set()
-    for path in (ROOT / "src" / "muteme_flow").rglob("*.py"):
+    for path in (ROOT / "src" / "limberwisk").rglob("*.py"):
         for node in ast.walk(ast.parse(path.read_text())):
             if isinstance(node, ast.Import):
                 found |= {alias.name.split(".")[0] for alias in node.names}
             elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
                 found.add(node.module.split(".")[0])
-    return found - set(sys.stdlib_module_names) - {"muteme_flow"}
+    return found - set(sys.stdlib_module_names) - {"limberwisk"}
 
 
 def test_every_third_party_module_the_code_imports_is_bundled():
@@ -132,7 +132,7 @@ def test_the_dmg_name_has_no_spaces_and_matches_the_pattern_the_workflow_uses():
     (pattern,) = re.findall(r'^dmg="(dist/[^"]+)"', script, re.M)
     assert " " not in pattern  # GitHub rewrites spaces in release asset names
     name = pattern.replace("$version", __version__).removeprefix("dist/")
-    assert fnmatch.fnmatch(name, "MuteMe-Flow-*.dmg")
+    assert fnmatch.fnmatch(name, "Limberwisk-*.dmg")
 
 
 # --- the release workflow --------------------------------------------------------------
@@ -266,11 +266,11 @@ def test_the_release_job_finds_its_files_at_the_root_of_the_artifact(workflow):
     assert "\n" not in path, "upload a single folder, not several paths"
     assert path.endswith("/")
     stage = steps(workflow)[step_index(workflow, "Stage the release files")]["run"]
-    assert f"cp dist/MuteMe-Flow-*.dmg {path}" in stage
+    assert f"cp dist/Limberwisk-*.dmg {path}" in stage
     assert f"{path}notes.md" in stage
     release_runs = " ".join(step.get("run", "") for step in steps(workflow, "release"))
     assert "dist/" not in release_runs
-    assert "MuteMe-Flow-*.dmg" in release_runs
+    assert "Limberwisk-*.dmg" in release_runs
     assert "notes.md" in release_runs
 
 

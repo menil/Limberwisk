@@ -4,7 +4,7 @@ import logging
 from collections.abc import Callable, Sequence
 from typing import Any
 
-from muteme_flow.protocols import FeedbackSink, FeedbackState
+from limberwisk.protocols import FeedbackSink, FeedbackState
 
 log = logging.getLogger(__name__)
 

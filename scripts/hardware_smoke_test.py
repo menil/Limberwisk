@@ -11,9 +11,9 @@ import argparse
 import logging
 import time
 
-from muteme_flow.hid_worker import DeviceEvent, HidWorker
-from muteme_flow.hidapi_device import open_first_known, preload_hidapi
-from muteme_flow.led import Color, LedMailbox
+from limberwisk.hid_worker import DeviceEvent, HidWorker
+from limberwisk.hidapi_device import open_first_known, preload_hidapi
+from limberwisk.led import Color, LedMailbox
 
 COLOR_HOLD_S = 1.5
 

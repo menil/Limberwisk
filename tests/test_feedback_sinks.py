@@ -1,10 +1,10 @@
-from muteme_flow.feedback_sinks import (
+from limberwisk.feedback_sinks import (
     AudioFeedbackSink,
     CompositeFeedbackSink,
     NullFeedbackSink,
     preload_system_sounds,
 )
-from muteme_flow.protocols import FeedbackSink, FeedbackState
+from limberwisk.protocols import FeedbackSink, FeedbackState
 
 
 def test_null_feedback_sink():

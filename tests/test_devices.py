@@ -1,6 +1,6 @@
 import pytest
 
-from muteme_flow import devices
+from limberwisk import devices
 
 
 def entry(vid, pid):

@@ -1,9 +1,9 @@
 from support.fake_hid import FakeHidDevice
 
-from muteme_flow.hid_worker import DeviceEvent
-from muteme_flow.led import Color, LedMailbox
-from muteme_flow.muteme_adapter import MuteMeInputSource, MuteMeLedSink
-from muteme_flow.protocols import (
+from limberwisk.hid_worker import DeviceEvent
+from limberwisk.led import Color, LedMailbox
+from limberwisk.muteme_adapter import MuteMeInputSource, MuteMeLedSink
+from limberwisk.protocols import (
     FeedbackSink,
     FeedbackState,
     InputEvent,

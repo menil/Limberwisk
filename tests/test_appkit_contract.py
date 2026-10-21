@@ -35,7 +35,7 @@ def test_running_application_lookup_is_on_nsrunningapplication():
 def test_notification_names_and_payload_key_match_the_system_constants():
     import AppKit
 
-    from muteme_flow import power, wispr_presence
+    from limberwisk import power, wispr_presence
 
     assert AppKit.NSWorkspaceDidLaunchApplicationNotification == wispr_presence.LAUNCH_NOTIFICATION
     assert (
@@ -137,7 +137,7 @@ def test_the_sleep_wake_and_terminate_notification_constants_exist():
 def test_service_management_constants_and_settings_link():
     from ServiceManagement import SMAppService, SMAppServiceStatusEnabled
 
-    from muteme_flow import login_item
+    from limberwisk import login_item
 
     assert SMAppServiceStatusEnabled == login_item._STATUS_ENABLED
     assert hasattr(SMAppService, "openSystemSettingsLoginItems")

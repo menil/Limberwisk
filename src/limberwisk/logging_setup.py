@@ -11,14 +11,14 @@ import sys
 from collections import deque
 from pathlib import Path
 
-from muteme_flow.app_info import APP_NAME
+from limberwisk.app_info import APP_NAME
 
-LOG_FILE_NAME = "muteme-flow.log"
+LOG_FILE_NAME = "limberwisk.log"
 _MAX_BYTES = 1_000_000
 _BACKUPS = 3
 RECENT_LINES = 200
 _FORMAT = "%(asctime)s %(levelname)s %(name)s: %(message)s"
-_OWNED = "_muteme_flow_handler"
+_OWNED = "_limberwisk_handler"
 _LOG_HINT = f"~/Library/Logs/{APP_NAME}"
 
 

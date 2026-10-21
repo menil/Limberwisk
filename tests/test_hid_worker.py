@@ -7,11 +7,11 @@ from support.clock import FakeClock
 from support.fake_hid import FakeHidDevice, opened
 from support.waiting import DEFAULT_TIMEOUT_S, wait_until
 
-from muteme_flow.devices import MUTEME_ORIGINAL_PID, MUTEME_VID
-from muteme_flow.hid_io import DeviceError, DeviceNotFoundError
-from muteme_flow.hid_session import WATCHDOG_S
-from muteme_flow.hid_worker import DeviceEvent, HidWorker
-from muteme_flow.led import Color, LedMailbox, led_report
+from limberwisk.devices import MUTEME_ORIGINAL_PID, MUTEME_VID
+from limberwisk.hid_io import DeviceError, DeviceNotFoundError
+from limberwisk.hid_session import WATCHDOG_S
+from limberwisk.hid_worker import DeviceEvent, HidWorker
+from limberwisk.led import Color, LedMailbox, led_report
 
 
 def quiet_device(*reports):

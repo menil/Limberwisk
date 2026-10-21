@@ -8,12 +8,12 @@ and hands everything to the main thread, where the state machine lives
 import logging
 from collections.abc import Callable
 
-from muteme_flow.commands import Command
-from muteme_flow.dispatcher import Completion, DispatchError, UrlDispatcher
-from muteme_flow.hid_worker import DeviceEvent
-from muteme_flow.latency import LatencyRecorder
-from muteme_flow.led import Color, LedMailbox
-from muteme_flow.protocols import (
+from limberwisk.commands import Command
+from limberwisk.dispatcher import Completion, DispatchError, UrlDispatcher
+from limberwisk.hid_worker import DeviceEvent
+from limberwisk.latency import LatencyRecorder
+from limberwisk.led import Color, LedMailbox
+from limberwisk.protocols import (
     DictationBackend,
     FeedbackSink,
     FeedbackState,
@@ -23,9 +23,9 @@ from muteme_flow.protocols import (
     feedback_state_to_color,
     input_event_to_device_event,
 )
-from muteme_flow.scheduler import Scheduler
-from muteme_flow.settings import BACKEND_DISPLAY_NAMES, DEFAULT_BACKEND
-from muteme_flow.state_machine import StateMachine, Timings
+from limberwisk.scheduler import Scheduler
+from limberwisk.settings import BACKEND_DISPLAY_NAMES, DEFAULT_BACKEND
+from limberwisk.state_machine import StateMachine, Timings
 
 log = logging.getLogger(__name__)
 

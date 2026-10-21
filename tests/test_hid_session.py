@@ -3,16 +3,16 @@ from support import sequences as seq
 from support.clock import FakeClock
 from support.fake_hid import FakeHidDevice, opened
 
-from muteme_flow.decoder import Edge
-from muteme_flow.hid_io import DeviceError
-from muteme_flow.hid_session import (
+from limberwisk.decoder import Edge
+from limberwisk.hid_io import DeviceError
+from limberwisk.hid_session import (
     BUSY_READ_TIMEOUT_MS,
     BUSY_WINDOW_S,
     IDLE_READ_TIMEOUT_MS,
     WATCHDOG_S,
     HidSession,
 )
-from muteme_flow.led import Color, LedMailbox, led_report
+from limberwisk.led import Color, LedMailbox, led_report
 
 
 @pytest.fixture

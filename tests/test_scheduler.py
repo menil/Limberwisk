@@ -1,6 +1,6 @@
 import logging
 
-from muteme_flow.scheduler import NSTimerScheduler
+from limberwisk.scheduler import NSTimerScheduler
 
 
 class FakeTimer:

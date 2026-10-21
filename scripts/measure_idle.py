@@ -1,6 +1,6 @@
 """Measure the idle memory and CPU of the packaged app (specs/spec.md section 8).
 
-    .venv/bin/python scripts/measure_idle.py "dist/MuteMe Flow.app" --seconds 60
+    .venv/bin/python scripts/measure_idle.py "dist/Limberwisk.app" --seconds 60
 
 Launches the app, waits for it to settle, then reports resident memory, memory footprint
 (what Activity Monitor calls Memory) and average CPU over the window. Nothing touches the

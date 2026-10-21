@@ -9,9 +9,9 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum, auto
 
-from muteme_flow.commands import Command
-from muteme_flow.led import Color
-from muteme_flow.scheduler import Scheduler, TimerHandle
+from limberwisk.commands import Command
+from limberwisk.led import Color
+from limberwisk.scheduler import Scheduler, TimerHandle
 
 log = logging.getLogger(__name__)
 

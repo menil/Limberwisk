@@ -27,15 +27,15 @@ import time
 from AppKit import NSRunningApplication
 from PyObjCTools import AppHelper
 
-from muteme_flow.commands import WISPR_BUNDLE_ID, Command
-from muteme_flow.controller import Controller
-from muteme_flow.decoder import IDLE, STATE_INDEX, TOUCH_BEGIN, TOUCH_END, TOUCH_HELD
-from muteme_flow.dispatcher import Completion, NSWorkspaceDispatcher, UrlDispatcher
-from muteme_flow.hid_worker import HidWorker
-from muteme_flow.led import Color, LedMailbox
-from muteme_flow.main_thread import post_to_main
-from muteme_flow.scheduler import NSTimerScheduler
-from muteme_flow.state_machine import Timings
+from limberwisk.commands import WISPR_BUNDLE_ID, Command
+from limberwisk.controller import Controller
+from limberwisk.decoder import IDLE, STATE_INDEX, TOUCH_BEGIN, TOUCH_END, TOUCH_HELD
+from limberwisk.dispatcher import Completion, NSWorkspaceDispatcher, UrlDispatcher
+from limberwisk.hid_worker import HidWorker
+from limberwisk.led import Color, LedMailbox
+from limberwisk.main_thread import post_to_main
+from limberwisk.scheduler import NSTimerScheduler
+from limberwisk.state_machine import Timings
 
 # From specs/spec.md section 8.
 TARGET_MS = 25

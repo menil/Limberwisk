@@ -1,6 +1,6 @@
 import pytest
 
-from muteme_flow.led import Color, LedMailbox, led_report
+from limberwisk.led import Color, LedMailbox, led_report
 
 
 @pytest.mark.parametrize(

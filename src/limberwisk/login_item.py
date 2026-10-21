@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from muteme_flow.app_info import APP_BUNDLE_ID
+from limberwisk.app_info import APP_BUNDLE_ID
 
 # SMAppServiceStatus values
 _STATUS_ENABLED = 1

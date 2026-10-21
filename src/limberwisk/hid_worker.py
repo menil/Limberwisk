@@ -13,10 +13,10 @@ import time
 from collections.abc import Callable
 from enum import Enum, auto
 
-from muteme_flow.decoder import Edge
-from muteme_flow.hid_io import DeviceError, DeviceNotFoundError, HidDevice
-from muteme_flow.hid_session import HidSession
-from muteme_flow.led import LedMailbox
+from limberwisk.decoder import Edge
+from limberwisk.hid_io import DeviceError, DeviceNotFoundError, HidDevice
+from limberwisk.hid_session import HidSession
+from limberwisk.led import LedMailbox
 
 log = logging.getLogger(__name__)
 

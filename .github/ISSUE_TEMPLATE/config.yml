@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
   - name: Troubleshooting
-    url: https://github.com/menil/wisprflow-muteme-bridge#troubleshooting
+    url: https://github.com/menil/limberwisk#troubleshooting
     about: What each status in the menu bar means, and the likely fix.

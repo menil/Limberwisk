@@ -4,9 +4,9 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "muteme-flow"
+name = "limberwisk"
 dynamic = ["version"]
-description = "macOS menu bar bridge between a MuteMe USB button and Wispr Flow"
+description = "macOS menu bar bridge between hardware buttons and dictation apps"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
@@ -29,10 +29,10 @@ dev = ["pytest>=8", "ruff>=0.6", "pyyaml>=6"]
 build = ["py2app==0.28.10"]
 
 [project.scripts]
-muteme-flow = "muteme_flow.__main__:main"
+limberwisk = "limberwisk.__main__:main"
 
 [tool.setuptools.dynamic]
-version = { attr = "muteme_flow.__version__" }
+version = { attr = "limberwisk.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -1,10 +1,10 @@
 import pytest
 from support.fake_appkit import FakeApp, FakeNotificationCenter
 
-from muteme_flow import conflict as conflict_module
-from muteme_flow.app_info import APP_BUNDLE_ID
-from muteme_flow.conflict import ConflictMonitor, describe_apps, is_official_app
-from muteme_flow.notifications import (
+from limberwisk import conflict as conflict_module
+from limberwisk.app_info import APP_BUNDLE_ID
+from limberwisk.conflict import ConflictMonitor, describe_apps, is_official_app
+from limberwisk.notifications import (
     LAUNCH_NOTIFICATION,
     TERMINATE_NOTIFICATION,
     Subscriptions,
@@ -29,7 +29,7 @@ class Harness:
 
 @pytest.mark.parametrize(
     ("name", "expected"),
-    [("MuteMe", True), ("MuteMe-Client", True), ("MuteMe Flow", False), ("Safari", False)],
+    [("MuteMe", True), ("MuteMe-Client", True), ("Limberwisk", False), ("Safari", False)],
 )
 def test_the_official_app_is_recognised_by_its_process_name(name, expected):
     assert is_official_app(name, "") is expected
@@ -41,7 +41,7 @@ def test_a_confirmed_bundle_identifier_matches_whatever_the_name(monkeypatch):
 
 
 def test_our_own_app_is_never_mistaken_for_the_official_one():
-    assert not is_official_app("MuteMe Flow", APP_BUNDLE_ID)
+    assert not is_official_app("Limberwisk", APP_BUNDLE_ID)
     assert not is_official_app("MuteMe", APP_BUNDLE_ID)  # even if the names ever collided
 
 

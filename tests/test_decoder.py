@@ -1,7 +1,7 @@
 import pytest
 from support import sequences as seq
 
-from muteme_flow.decoder import Edge, EdgeDecoder
+from limberwisk.decoder import Edge, EdgeDecoder
 
 
 def edges(reports):

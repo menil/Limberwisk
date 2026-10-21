@@ -1,6 +1,6 @@
 import pytest
 
-from muteme_flow.settings import (
+from limberwisk.settings import (
     BACKEND_CHOICES,
     DEFAULT_BACKEND,
     DEFAULT_HOLD_THRESHOLD_MS,

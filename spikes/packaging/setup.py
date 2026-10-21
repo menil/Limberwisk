@@ -11,7 +11,7 @@ setup(
     options={
         "py2app": {
             "plist": {
-                "CFBundleIdentifier": "dev.muteme-flow.spike",
+                "CFBundleIdentifier": "dev.limberwisk.spike",
                 "LSUIElement": True,
             },
             "packages": ["rumps", "hid"],

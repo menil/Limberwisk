@@ -1,11 +1,11 @@
 import pytest
 
-from muteme_flow.envious_wispr_adapter import (
+from limberwisk.envious_wispr_adapter import (
     ENVIOUS_WISPR_BUNDLE_ID,
     EnviousWisprBackend,
     EnviousWisprCommand,
 )
-from muteme_flow.protocols import (
+from limberwisk.protocols import (
     DictationBackend,
     DictationCommand,
 )

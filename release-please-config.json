@@ -3,7 +3,7 @@
   "packages": {
     ".": {
       "release-type": "simple",
-      "package-name": "muteme-flow",
+      "package-name": "limberwisk",
       "changelog-path": "CHANGELOG.md",
       "include-component-in-tag": false,
       "bump-minor-pre-major": true,
@@ -12,7 +12,7 @@
       "extra-files": [
         {
           "type": "generic",
-          "path": "src/muteme_flow/__init__.py"
+          "path": "src/limberwisk/__init__.py"
         }
       ]
     }

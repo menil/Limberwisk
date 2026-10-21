@@ -20,13 +20,13 @@ publish it.
    `Release-As: 1.0.0` footer.
 3. Wait for the Release workflow to finish, then review the draft release it filled in
    (the files, the install notes and the SHA-256) and publish it.
-   The release carries the DMG twice, as `MuteMe-Flow-<version>.dmg` and as `MuteMe-Flow.dmg`:
-   the README links to `releases/latest/download/MuteMe-Flow.dmg`, which GitHub resolves to
+   The release carries the DMG twice, as `Limberwisk-<version>.dmg` and as `Limberwisk.dmg`:
+   the README links to `releases/latest/download/Limberwisk.dmg`, which GitHub resolves to
    the newest published release that is not a draft or prerelease.
 
 Details:
 
-- The tag must match the version in `src/muteme_flow/__init__.py`, or the workflow stops
+- The tag must match the version in `src/limberwisk/__init__.py`, or the workflow stops
   before building. The release PR keeps them in step (`__version__` carries an
   `x-release-please-version` marker so it can be edited).
 - Pushing a tag by hand still works (`git tag v0.2.0 && git push origin v0.2.0`, after
@@ -54,8 +54,8 @@ token instead (the action's `token:` input), so its PR runs the checks too.
 ```bash
 python3 -m venv .venv                     # must be the python.org universal2 Python
 .venv/bin/pip install -e '.[dev,build]'
-scripts/build_app.sh                      # dist/MuteMe Flow.app, ad-hoc signed
-scripts/make_dmg.sh                       # dist/MuteMe-Flow-<version>.dmg
+scripts/build_app.sh                      # dist/Limberwisk.app, ad-hoc signed
+scripts/make_dmg.sh                       # dist/Limberwisk-<version>.dmg
 ```
 
 `build_app.sh` fails if any native binary in the bundle is single-architecture. So far the
