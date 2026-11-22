@@ -3,6 +3,13 @@
 All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.3.1](https://github.com/menil/Limberwisk/compare/v0.3.0...v0.3.1) (2026-11-22)
+
+
+### Bug Fixes
+
+* detect Wispr Flow relaunch via runningApplications KVO ([ae54ebe](https://github.com/menil/Limberwisk/commit/ae54ebe55589c444407b5f596c2a9f2c89d4d63c))
+
 ## [0.3.0](https://github.com/menil/wisprflow-muteme-bridge/compare/v0.2.0...v0.3.0) (2026-10-21)
 
 
