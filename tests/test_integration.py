@@ -321,6 +321,27 @@ def test_runtime_switch_backend_stops_active_recording_and_updates_presence():
     runtime.stop()
 
 
+def test_runtime_switch_backend_always_leaves_exactly_one_live_presence():
+    # Each presence owns a running-application observer, so a switch must stop the old one
+    # before starting the next, and quitting must stop the one that is current.
+    s = System()
+    order: list[str] = []
+    runtime = s.make_runtime(order=order)
+    runtime.start()
+    runtime.switch_backend("envious-wispr")
+    runtime.switch_backend("wispr-flow")
+    runtime.stop()
+    presence_calls = [call for call in order if "presence" in call]
+    assert presence_calls == [
+        "start presence",
+        "stop presence",
+        "start presence-envious-wispr",
+        "stop presence-envious-wispr",
+        "start presence-wispr-flow",
+        "stop presence-wispr-flow",
+    ]
+
+
 def test_runtime_audio_feedback_toggle():
     s = System()
 

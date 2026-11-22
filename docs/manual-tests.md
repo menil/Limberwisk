@@ -42,7 +42,21 @@ section 4) is revised before anything else is trusted.
 - [ ] **Hold** the button: dictates while held, stops on release
 - [ ] A very quick tap-tap does not leave Wispr stuck recording
 - [ ] Quit Wispr: LED turns blue and touching does nothing (Wispr is not relaunched)
-- [ ] Start Wispr again: LED returns to red
+- [ ] Start Wispr again: LED returns to red within a few seconds, without restarting Limberwisk.
+      Launch it by path (`open "/Applications/Wispr Flow.app"`) or from Finder. Not
+      `open -a "Wispr Flow"`: a helper app nested inside it has the same name and that
+      command can start the helper instead, which quits at once
+- [ ] **Wispr auto-update:** when Wispr Flow next restarts itself to install an update, the
+      LED turns blue for a few seconds and returns to red on its own. Wispr finishes
+      launching as a background app and only then shows its Dock icon, so macOS sends no
+      launch notification for it; Limberwisk relies on the running-application list
+      instead (specs/spec.md section 4.4). Check the timing against
+      `~/Library/Caches/com.electron.wispr-flow.ShipIt/ShipIt_stderr.log` and
+      `~/Library/Logs/Limberwisk/limberwisk.log` (`presence of ...: running (kvo)`).
+      The ShipIt log is Wispr's own updater log: it only exists on a Mac where Wispr has
+      installed an update at least once, and it is there for debugging, not a pass/fail check
+- [ ] With the **EnviousWispr** backend chosen in the menu, quit and relaunch EnviousWispr:
+      the same blue, then red
 - [ ] Start dictation, then unplug the button: Wispr stops
 - [ ] Start dictation, then put the Mac to sleep and wake it: Wispr is stopped, LED red
 - [ ] Start dictation, then `kill -TERM` the app: Wispr stops, LED ends red

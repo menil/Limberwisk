@@ -82,6 +82,25 @@ def test_the_real_watch_adds_and_removes_its_observer_on_nsworkspace():
     watch.stop()  # raises NSRangeException if the observer was not registered as expected
 
 
+def test_the_real_presence_starts_and_stops_repeatedly_for_both_backends():
+    """Backend switching stops one presence and starts another, so each must survive being
+    started and stopped more than once against the real NSWorkspace. Cocoa raises when a
+    key-value observer is removed twice or was never added, which the fakes cannot show.
+    """
+    from limberwisk.commands import WISPR_BUNDLE_ID
+    from limberwisk.envious_wispr_adapter import ENVIOUS_WISPR_BUNDLE_ID
+    from limberwisk.wispr_presence import WisprPresence
+
+    for bundle_id in (WISPR_BUNDLE_ID, ENVIOUS_WISPR_BUNDLE_ID):
+        reports = []
+        presence = WisprPresence.for_current_app(reports.append, bundle_id=bundle_id)
+        for _ in range(2):  # a stopped presence must be restartable, as a backend switch does
+            presence.start()
+            presence.stop()
+        assert len(reports) == 2
+        assert all(isinstance(running, bool) for running in reports)
+
+
 def test_notification_center_and_main_queue_api():
     from AppKit import NSWorkspace
     from Foundation import NSOperationQueue

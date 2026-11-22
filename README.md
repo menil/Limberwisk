@@ -53,7 +53,7 @@ Requires macOS 13 or later and [Wispr Flow](https://wisprflow.ai).
 | You see | Likely cause and fix |
 | :--- | :--- |
 | `Status: MuteMe not connected` | The button is unplugged or on a charge-only cable |
-| `Status: Wispr Flow not running` | Start Wispr Flow. Touches are ignored until then, on purpose, so the button never launches it |
+| `Status: Wispr Flow not running` | Start Wispr Flow. Touches are ignored until then, on purpose, so the button never launches it. The light turns red again by itself, even after an automatic update |
 | `Status: Official MuteMe app is running` | Click the warning row to quit it, or quit it yourself |
 | `Status: Cannot open device` | Another program holds the button. Quit the official MuteMe app first |
 | `Status: Wispr command failed` | Limberwisk could not reach Wispr Flow; check that it is installed and running |
