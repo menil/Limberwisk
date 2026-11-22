@@ -24,6 +24,7 @@ setup(
             # Imported lazily inside functions, which the dependency scan can miss.
             "includes": [
                 "hid",
+                "objc",
                 "AppKit",
                 "Foundation",
                 "ServiceManagement",

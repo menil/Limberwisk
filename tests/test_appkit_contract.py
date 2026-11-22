@@ -35,16 +35,51 @@ def test_running_application_lookup_is_on_nsrunningapplication():
 def test_notification_names_and_payload_key_match_the_system_constants():
     import AppKit
 
-    from limberwisk import power, wispr_presence
+    from limberwisk import notifications, power, wispr_presence
 
-    assert AppKit.NSWorkspaceDidLaunchApplicationNotification == wispr_presence.LAUNCH_NOTIFICATION
+    assert AppKit.NSWorkspaceDidLaunchApplicationNotification == notifications.LAUNCH_NOTIFICATION
     assert (
         AppKit.NSWorkspaceDidTerminateApplicationNotification
-        == wispr_presence.TERMINATE_NOTIFICATION
+        == notifications.TERMINATE_NOTIFICATION
     )
     assert AppKit.NSWorkspaceApplicationKey == wispr_presence._APPLICATION_KEY
     assert AppKit.NSWorkspaceWillSleepNotification == power.WILL_SLEEP_NOTIFICATION
     assert AppKit.NSWorkspaceDidWakeNotification == power.DID_WAKE_NOTIFICATION
+
+
+def test_running_applications_kvo_api_used_to_detect_launches():
+    from AppKit import NSWorkspace
+
+    from limberwisk.running_applications import RUNNING_APPLICATIONS_KEY
+
+    workspace = NSWorkspace.sharedWorkspace()
+    assert hasattr(workspace, "addObserver_forKeyPath_options_context_")
+    assert hasattr(workspace, "removeObserver_forKeyPath_")
+    # The key must name a real, observable property of NSWorkspace.
+    assert hasattr(workspace, RUNNING_APPLICATIONS_KEY)
+    assert workspace.valueForKey_(RUNNING_APPLICATIONS_KEY)
+
+
+def test_the_real_kvo_observer_is_called_when_an_observed_value_changes():
+    from Foundation import NSMutableDictionary
+
+    from limberwisk import running_applications
+
+    calls = []
+    observer = running_applications._make_system_observer(lambda: calls.append(1))
+    observed = NSMutableDictionary.dictionary()
+    observed.addObserver_forKeyPath_options_context_(observer, "key", 0, None)
+    observed.setValue_forKey_("changed", "key")
+    observed.removeObserver_forKeyPath_(observer, "key")
+    assert calls == [1]
+
+
+def test_the_real_watch_adds_and_removes_its_observer_on_nsworkspace():
+    from limberwisk.running_applications import RunningApplicationsWatch
+
+    watch = RunningApplicationsWatch.for_current_app()
+    watch.start(lambda: None)
+    watch.stop()  # raises NSRangeException if the observer was not registered as expected
 
 
 def test_notification_center_and_main_queue_api():

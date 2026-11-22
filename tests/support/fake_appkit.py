@@ -32,6 +32,53 @@ class FakeWorkspace:
         )
 
 
+class FakeKvoObserver:
+    """Stands in for the NSObject KVO observer: `fire()` is the system reporting a change."""
+
+    def __init__(self, callback: Any) -> None:
+        self._callback = callback
+
+    def fire(self) -> None:
+        self._callback()
+
+
+class FakeKvoWorkspace:
+    """Records KVO registrations the way NSWorkspace would receive them."""
+
+    def __init__(self) -> None:
+        self.added: list[tuple[Any, str, int, Any]] = []
+        self.removed: list[tuple[Any, str]] = []
+
+    def addObserver_forKeyPath_options_context_(  # noqa: N802
+        self, observer: Any, key_path: str, options: int, context: Any
+    ) -> None:
+        self.added.append((observer, key_path, options, context))
+
+    def removeObserver_forKeyPath_(self, observer: Any, key_path: str) -> None:  # noqa: N802
+        self.removed.append((observer, key_path))
+
+
+class FakeRunningApplicationsWatch:
+    """Stands in for `RunningApplicationsWatch`: `fire()` is the running-app list changing."""
+
+    def __init__(self) -> None:
+        self.started = False
+        self.stop_calls = 0
+        self._handler: Any = None
+
+    def start(self, handler: Any) -> None:
+        self.started = True
+        self._handler = handler
+
+    def stop(self) -> None:
+        self.started = False
+        self.stop_calls += 1
+
+    def fire(self) -> None:
+        assert self.started, "the watch only reports while started"
+        self._handler()
+
+
 class FakeApp:
     def __init__(
         self, bundle_id: str, terminated: bool = False, name: str = "App", accepts_quit: bool = True
