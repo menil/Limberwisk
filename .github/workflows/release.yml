@@ -3,7 +3,10 @@ name: Release
 # Builds the app for a tag such as v1.0.0 and attaches a DMG to a DRAFT release, so a person
 # reviews it before anything is published. It runs when such a tag is pushed by hand, and
 # when release-please.yml calls it after merging a release PR: tags made with the built-in
-# token start no workflow of their own. See docs/releasing.md.
+# token start no workflow of their own. It can also be run by hand ("Run workflow", or
+# `gh workflow run release.yml -f tag=v1.0.0`) to build an existing tag again, for example
+# when the first build could not start. It then adds to that tag's draft release.
+# See docs/releasing.md.
 on:
   push:
     tags: ["v*"]
@@ -11,6 +14,12 @@ on:
     inputs:
       tag:
         description: The tag to build, for example v1.0.0.
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The existing tag to build, for example v1.0.0.
         required: true
         type: string
 
@@ -29,8 +38,11 @@ concurrency:
 
 jobs:
   build:
-    # Apple Silicon runner; the bundle is still universal2 (arm64 + x86_64).
-    runs-on: macos-14
+    # Apple Silicon runner; the bundle is still universal2 (arm64 + x86_64). Named rather than
+    # `macos-latest`, which moves on its own; GitHub retires old images (macos-14 went in
+    # November 2026, after which jobs on it could not get a runner), so check this label
+    # when a release build fails to start.
+    runs-on: macos-15
     timeout-minutes: 60
     # Hold the signing secrets in this environment and add required reviewers to it (see
     # docs/releasing.md), so a pushed tag alone cannot reach them.
