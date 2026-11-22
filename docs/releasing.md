@@ -35,6 +35,17 @@ Details:
 - If you re-run the workflow for the same tag it replaces the files, and does not add the
   install notes twice. A hand-pushed tag that already has a draft needs the old draft
   deleted first, because GitHub allows several drafts for one tag.
+- **If the build never starts or has to be redone for a tag that is already released**
+  (the tag and an empty draft exist), do not delete anything: fix the workflow on `main`,
+  then run the Release workflow by hand for that tag, from **Actions > Release > Run
+  workflow** or with `gh workflow run release.yml -f tag=vX.Y.Z`. It builds the code at the
+  tag and adds the DMGs to the existing draft. A plain "Re-run" of the failed run does not
+  help, because it reruns the old workflow file. This was needed for v0.3.1: GitHub retired
+  the `macos-14` runner image on 2 November 2026 (see its changelog,
+  <https://github.blog/changelog/2026-10-01-github-actions-macos-14-runner-image-retirement>),
+  so the build job got no runner. If that error
+  (`The configuration '...' is not supported`) returns, the `runs-on` label in
+  `release.yml` is the thing to update.
 - `release-please` does not use an `[Unreleased]` heading; it adds each version above the
   previous one. The 0.1.0 entry was written by hand.
 
